@@ -17,7 +17,9 @@
 /**
  *
  */
-module app;
+module moo.app;
+
+import moo.exception : ExitCodeException;
 
 
 /**
@@ -33,8 +35,6 @@ in {
 }
 
 body {
-    import exception : ExitCodeException ;
-
     int     exitCode    = ExitCodeException.GEN;
     Options options     ;
 
@@ -89,7 +89,6 @@ struct Options
     }
 
     body {
-        import exception    : ExitCodeException ;
         import std.getopt   ;
         import std.path     : setExtension      ;
         import std.string   : format            ;
@@ -117,12 +116,6 @@ struct Options
 
 
 } // end Options
-/+            "file|f",   &dbFile,
-            "log|l",    &logFile,
-            "port|p",   &port,
-            "help|?",   &help,
-            "verbose|v",    &verbose,
-+/
 
 
 /**

@@ -17,7 +17,7 @@
 /**
  *
  */
-module exception;
+module moo.exception;
 
 
 /**
