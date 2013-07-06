@@ -1,3 +1,4 @@
 .dub
 bin
 tmp
+moo.log

@@ -17,68 +17,76 @@
 /**
  *
  */
-module moo.exception;
+module moo.db.db;
 
 
 /**
  *
  */
-class ExitCodeException : Exception
+final class Database
 {
-    import ErrNo = core.stdc.errno;
 
 
     /**
      *
      */
-    enum : int {
-        OK              = 0,
-        GENERIC         = 1,
-        PERMS           = ErrNo.EPERM,
-        FILE_NOT_FOUND  = ErrNo.ENOENT,
-        INVALID_ARG     = ErrNo.EINVAL,
-        INTERNAL        = 253,
-        INVALID_DB      = 254,
-        UNKNOWN         = 255
-    }
-
-
-    /**
-     *
-     */
-    this (
-        int         code    ,
-        string      msg     ,
-        string      file    = __FILE__,
-        size_t      line    = __LINE__,
-        Throwable   next    = null
-    ) 
-    @safe pure nothrow
+    static Database instance ()
+    @property
 
     body {
-        super( msg, file, line, next );
-        this.code = code;
+        if ( !_instantiated ) {
+            synchronized {
+                if ( _instance is null ) {
+                    _instance = new Database;
+                }
+                _instantiated = true;
+            }
+        }
+        return _instance;
     }
 
 
-    this (
-        int         code    ,
-        string      msg     ,
-        Throwable   next    ,
-        string      file    = __FILE__,
-        size_t      line    = __LINE__
+    /**
+     *
+     */
+    private static bool _instantiated = false;
+
+
+    /**
+     *
+     */
+    private static __gshared typeof( this ) _instance;
+
+
+    /**
+     *
+     */
+    private this () {}
+
+
+    //==========================================================================================
+
+
+    /**
+     *
+     */
+    void start (
+        string  path    ,
+        bool    verbose
     )
-    @safe pure nothrow
 
     body {
-        this( code, msg, file, line, next );
     }
 
 
     /**
      *
      */
-    int code;
+    void stop ()
+
+    body {
+    }
 
 
-} // end ExitCodeException
+} // end Database
+

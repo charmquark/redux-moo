@@ -25,6 +25,12 @@ import moo.exception : ExitCodeException;
 /**
  *
  */
+enum APP_VERSION = `0.1.0-alpha`;
+
+
+/**
+ *
+ */
 int main (
     string[] args
 )
@@ -44,6 +50,8 @@ body {
             options.showHelp();
         }
         else {
+            startup( options );
+            shutdown();
         }
     }
     catch ( Exception x ) {
@@ -140,7 +148,7 @@ struct Options
         if ( args.length > 1 ) {
             help = true;
             throw new ExitCodeException(
-                ExitCodeException.INV_ARG,
+                ExitCodeException.INVALID_ARG,
                 `Unrecognized argument(s): %(%s%| %)`.format( args[ 1 .. $ ] )
             );
         }
@@ -167,6 +175,36 @@ struct Options
 /**
  *
  */
+void shutdown ()
+
+body {
+    import moo.log;
+
+    Database.instance.stop();
+    Logger( `shutdown` ).write( `Goodbye.` );
+}
+
+
+/**
+ *
+ */
+void startup (
+    Options options
+)
+
+body {
+    import moo.log;
+    import moo.db.db;
+    
+    Logger.start( options.log, options.verbose );
+    Logger( `startup` ).writef( `Starting ReduxMOO %s`, APP_VERSION );
+    Database.instance.start( options.db, options.verbose );
+}
+
+
+/**
+ *
+ */
 int uncaughtException (
     Exception x
 )
@@ -187,6 +225,6 @@ body {
     if ( auto xx = cast( ExitCodeException ) x ) {
         return xx.code;
     }
-    return ExitCodeException.GEN;
+    return ExitCodeException.GENERIC;
 }
 
