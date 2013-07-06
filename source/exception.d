@@ -17,61 +17,66 @@
 /**
  *
  */
-module app;
-
-import  std.stdio   ;
+module exception;
 
 
 /**
  *
  */
-int main (
-    string[] args
-)
+class ExitCodeException : Exception
+{
+    import ErrNo = core.stdc.errno;
 
-in {
-    // there's something seriously wonky if this ever trips...
-    assert( args.length != 0 );
-}
 
-body {
-    import exception ;
-
-    int exitCode = 1;
-
-    try {
-        exitCode = 0;
-    }
-    catch ( Exception x ) {
-        uncaughtException( x );
-        if ( auto xx = cast( ExitCodeException ) x ) {
-            exitCode = xx.code;
-        }
+    /**
+     *
+     */
+    enum : int {
+        OK      = 0,
+        PERM    = ErrNo.EPERM,
+        FILE_NF = ErrNo.ENOENT,
+        INV_ARG = ErrNo.EINVAL,
+        INV_DB  = 254,
+        UNKNOWN = 255
     }
 
-    return exitCode;
-}
+
+    /**
+     *
+     */
+    this (
+        int         code    ,
+        string      msg     ,
+        string      file    = __FILE__,
+        size_t      line    = __LINE__,
+        Throwable   next    = null
+    ) 
+    @safe pure nothrow
+
+    body {
+        super( msg, file, line, next );
+        this.code = code;
+    }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-private:
-////////////////////////////////////////////////////////////////////////////////////////////////////
+    this (
+        int         code    ,
+        string      msg     ,
+        Throwable   next    ,
+        string      file    = __FILE__,
+        size_t      line    = __LINE__
+    )
+    @safe pure nothrow
+
+    body {
+        this( code, msg, file, line, next );
+    }
 
 
-/**
- *
- */
-void uncaughtException (
-    Exception x
-)
+    /**
+     *
+     */
+    int code;
 
-in {
-    assert( x !is null );
-}
 
-body {
-    
-    stderr.writeln();
-    stderr.writeln( x.toString() );
-}
-
+} // end ExitCodeException
