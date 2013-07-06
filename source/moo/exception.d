@@ -19,35 +19,36 @@
  */
 module moo.exception;
 
+import ErrNo = core.stdc.errno;
+
+
+/**
+ *
+ */
+enum ExitCode : int {
+    OK              = 0,
+    GENERIC         = 1,
+    PERMS           = ErrNo.EPERM,
+    FILE_NOT_FOUND  = ErrNo.ENOENT,
+    INVALID_ARG     = ErrNo.EINVAL,
+    INTERNAL        = 253,
+    INVALID_DB      = 254,
+    UNKNOWN         = 255
+}
+
 
 /**
  *
  */
 class ExitCodeException : Exception
 {
-    import ErrNo = core.stdc.errno;
-
-
-    /**
-     *
-     */
-    enum : int {
-        OK              = 0,
-        GENERIC         = 1,
-        PERMS           = ErrNo.EPERM,
-        FILE_NOT_FOUND  = ErrNo.ENOENT,
-        INVALID_ARG     = ErrNo.EINVAL,
-        INTERNAL        = 253,
-        INVALID_DB      = 254,
-        UNKNOWN         = 255
-    }
 
 
     /**
      *
      */
     this (
-        int         code    ,
+        ExitCode    code    ,
         string      msg     ,
         string      file    = __FILE__,
         size_t      line    = __LINE__,
@@ -60,9 +61,10 @@ class ExitCodeException : Exception
         this.code = code;
     }
 
-
+    
+    ///ditto
     this (
-        int         code    ,
+        ExitCode    code    ,
         string      msg     ,
         Throwable   next    ,
         string      file    = __FILE__,
@@ -78,7 +80,73 @@ class ExitCodeException : Exception
     /**
      *
      */
-    int code;
+    ExitCode code;
 
 
 } // end ExitCodeException
+
+
+/**
+ *
+ */
+template enforceEx ( E ) {
+    static import std.exception;
+    
+    static if ( is( E : ExitCodeException ) ) {
+        T enforceEx (
+            T
+        ) (
+            T           value   ,
+            ExitCode    code    ,
+            lazy string msg     = ``,
+            string      file    = __FILE__,
+            size_t      line    = __LINE__
+        )
+        @safe pure
+        
+        body {
+            if ( !value ) {
+                throw new E( code, msg, file, line );
+            }
+            return value;
+        }
+    }
+    else {
+        alias enforceEx = std.exception.enforceEx!E;
+    }
+}
+
+
+/**
+ *
+ */
+template exitCodeEnforce (
+    string CodeName
+) {
+    static if ( __traits( hasMember, ExitCode, CodeName ) ) {
+        alias exitCodeEnforce = exitCodeEnforce!( __traits( getMember, ExitCode, CodeName ) );
+    }
+    else {
+        static assert( false, `Undefined exit code name: ` ~ CodeName );
+    }
+}
+
+///ditto
+template exitCodeEnforce (
+    ExitCode Code
+) {
+    T exitCodeEnforce (
+        T
+    ) (
+        T           value   ,
+        lazy string msg     = ``,
+        string      file    = __FILE__,
+        size_t      line    = __LINE__
+    )
+    @safe pure
+    
+    body {
+        return enforceEx!ExitCodeException( value, Code, msg, file, line );
+    }
+}
+

@@ -56,16 +56,9 @@ struct Logger
         import moo.exception;
 
         synchronized {
-            if ( _path == null ) {
-                _path = path;
-                _verbose = verbose;
-            }
-            else {
-                throw new ExitCodeException(
-                    ExitCodeException.GENERIC,
-                    `Tried to initialize logger twice.`
-                );
-            }
+            exitCodeEnforce!`GENERIC`( _path == null, `Tried to start logger twice.` );
+            _path = path;
+            _verbose = verbose;
         }
     }
 

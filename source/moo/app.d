@@ -19,7 +19,7 @@
  */
 module moo.app;
 
-import moo.exception : ExitCodeException;
+import moo.exception;
 
 
 /**
@@ -41,7 +41,7 @@ in {
 }
 
 body {
-    int     exitCode    = ExitCodeException.OK;
+    auto    exitCode    = ExitCode.OK;
     Options options     ;
 
     try {
@@ -145,12 +145,9 @@ struct Options
             "help|?"    , &help     ,
             "verbose|v" , &verbose  
         );
-        if ( args.length > 1 ) {
-            help = true;
-            throw new ExitCodeException(
-                ExitCodeException.INVALID_ARG,
-                `Unrecognized argument(s): %(%s%| %)`.format( args[ 1 .. $ ] )
-            );
+        {
+            scope( failure ) help = true;
+            exitCodeEnforce!`INVALID_ARG`( args.length <= 1, `Unrecognized argument(s).` );
         }
         if ( log == null ) {
             log = db.setExtension( `log` );
@@ -179,6 +176,7 @@ void shutdown ()
 
 body {
     import moo.log;
+    import moo.db.db;
 
     Database.instance.stop();
     Logger( `shutdown` ).write( `Goodbye.` );
@@ -205,7 +203,7 @@ body {
 /**
  *
  */
-int uncaughtException (
+ExitCode uncaughtException (
     Exception x
 )
 
@@ -225,6 +223,6 @@ body {
     if ( auto xx = cast( ExitCodeException ) x ) {
         return xx.code;
     }
-    return ExitCodeException.GENERIC;
+    return ExitCode.GENERIC;
 }
 
