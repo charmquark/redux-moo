@@ -19,6 +19,8 @@
  */
 module app;
 
+import  std.stdio   ;
+
 
 /**
  *
@@ -26,7 +28,45 @@ module app;
 int main (
     string[] args
 )
-{
-    return 0;
+
+in {
+    // there's something seriously wonky if this ever trips...
+    assert( args.length != 0 );
+}
+
+body {
+    int exitCode = 1;
+    
+    try {
+        exitCode = 0;
+    }
+    catch ( Exception x ) {
+        uncaughtException( x );
+    }
+    
+    return exitCode;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+private:
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+/**
+ *
+ */
+void uncaughtException (
+    Exception x
+)
+
+in {
+    assert( x !is null );
+}
+
+body {
+    
+    stderr.writeln();
+    stderr.writeln( x.toString() );
 }
 
