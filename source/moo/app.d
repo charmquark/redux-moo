@@ -35,17 +35,24 @@ in {
 }
 
 body {
-    int     exitCode    = ExitCodeException.GEN;
+    int     exitCode    = ExitCodeException.OK;
     Options options     ;
 
     try {
         options.parse( args );
-        exitCode = ExitCodeException.OK;
+        if ( options.help ) {
+            options.showHelp();
+        }
+        else {
+        }
     }
     catch ( Exception x ) {
-        uncaughtException( x );
-        if ( auto xx = cast( ExitCodeException ) x ) {
-            exitCode = xx.code;
+        exitCode = uncaughtException( x );
+        if ( options.help ) {
+            try {
+                options.showHelp();
+            }
+            catch ( Exception ignore ) {}
         }
     }
 
@@ -69,10 +76,37 @@ struct Options
     /**
      *
      */
+    enum DEFAULT_DB = `moo.db`;
+
+
+    /**
+     *
+     */
+    enum DEFAULT_PORT = 11000;
+
+
+    /**
+     *
+     */
+    enum HELP_FMT = 
+        "USAGE: %s <options>\n"
+        "\n"
+        "OPTIONS:\n"
+        "    -?  --help         Show this help text.\n"
+        "    -f  --file=PATH    Path to database. (default %s; current %s)\n"
+        "    -l  --log=PATH     Path to logfile. If not given, derived from db path. (current %s)\n"
+        "    -p  --port=NUM     System listener port. (default %s; current %s)\n"
+        "    -v  --verbose      Verbose program output.\n"
+    ;
+
+
+    /**
+     *
+     */
     string  command = void,
-            db      = `moo.db`,
+            db      = DEFAULT_DB,
             log     = null;
-    ushort  port    = 11000;
+    ushort  port    = DEFAULT_PORT;
     bool    help    = false,
             verbose = false;
 
@@ -104,6 +138,7 @@ struct Options
             "verbose|v" , &verbose  
         );
         if ( args.length > 1 ) {
+            help = true;
             throw new ExitCodeException(
                 ExitCodeException.INV_ARG,
                 `Unrecognized argument(s): %(%s%| %)`.format( args[ 1 .. $ ] )
@@ -115,13 +150,24 @@ struct Options
     }
 
 
+    /**
+     *
+     */
+    void showHelp ()
+
+    body {
+        import std.stdio : writeln, writefln;
+        writefln( HELP_FMT, command, DEFAULT_DB, db, log, DEFAULT_PORT, port );
+    }
+
+
 } // end Options
 
 
 /**
  *
  */
-void uncaughtException (
+int uncaughtException (
     Exception x
 )
 
@@ -132,7 +178,15 @@ in {
 body {
     import  std.stdio : stderr  ;
 
-    stderr.writeln();
-    stderr.writeln( x.toString() );
+    debug {
+        stderr.writeln( x.toString() );
+    }
+    else {
+        stderr.writeln( "ERROR: ", x.msg );
+    }
+    if ( auto xx = cast( ExitCodeException ) x ) {
+        return xx.code;
+    }
+    return ExitCodeException.GEN;
 }
 
