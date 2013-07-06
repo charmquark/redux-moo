@@ -33,6 +33,7 @@ class ExitCodeException : Exception
      */
     enum : int {
         OK      = 0,
+        GEN     = 1,
         PERM    = ErrNo.EPERM,
         FILE_NF = ErrNo.ENOENT,
         INV_ARG = ErrNo.EINVAL,

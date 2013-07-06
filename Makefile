@@ -22,4 +22,4 @@ test:
 	$(RDMD) $(COMMON_OPTS) $(TEST_OPTS) $(MODULES)
 
 clean:
-	rm -r tmp/*
+	rm -r $(WORK_DIR)/*

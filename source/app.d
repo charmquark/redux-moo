@@ -19,8 +19,6 @@
  */
 module app;
 
-import  std.stdio   ;
-
 
 /**
  *
@@ -35,12 +33,14 @@ in {
 }
 
 body {
-    import exception ;
+    import exception : ExitCodeException ;
 
-    int exitCode = 1;
+    int     exitCode    = ExitCodeException.GEN;
+    Options options     ;
 
     try {
-        exitCode = 0;
+        options.parse( args );
+        exitCode = ExitCodeException.OK;
     }
     catch ( Exception x ) {
         uncaughtException( x );
@@ -61,6 +61,73 @@ private:
 /**
  *
  */
+struct Options
+{
+    import std.getopt;
+
+
+    /**
+     *
+     */
+    string  command = void,
+            db      = `moo.db`,
+            log     = null;
+    ushort  port    = 11000;
+    bool    help    = false,
+            verbose = false;
+
+
+    /**
+     *
+     */
+    void parse (
+        string[]    args
+    )
+
+    in {
+        assert( args.length != 0 );
+    }
+
+    body {
+        import exception    : ExitCodeException ;
+        import std.getopt   ;
+        import std.path     : setExtension      ;
+        import std.string   : format            ;
+
+        command = args[ 0 ];
+        getopt(
+            args,
+            config.passThrough,
+            "file|f"    , &db       ,
+            "log|l"     , &log      ,
+            "port|p"    , &port     ,
+            "help|?"    , &help     ,
+            "verbose|v" , &verbose  
+        );
+        if ( args.length > 1 ) {
+            throw new ExitCodeException(
+                ExitCodeException.INV_ARG,
+                `Unrecognized argument(s): %(%s%| %)`.format( args[ 1 .. $ ] )
+            );
+        }
+        if ( log == null ) {
+            log = db.setExtension( `log` );
+        }
+    }
+
+
+} // end Options
+/+            "file|f",   &dbFile,
+            "log|l",    &logFile,
+            "port|p",   &port,
+            "help|?",   &help,
+            "verbose|v",    &verbose,
++/
+
+
+/**
+ *
+ */
 void uncaughtException (
     Exception x
 )
@@ -70,7 +137,8 @@ in {
 }
 
 body {
-    
+    import  std.stdio : stderr  ;
+
     stderr.writeln();
     stderr.writeln( x.toString() );
 }
