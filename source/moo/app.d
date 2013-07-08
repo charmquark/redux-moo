@@ -31,9 +31,7 @@ enum APP_VERSION = `0.1.0-alpha`;
 /**
  *
  */
-int main (
-    string[] args
-)
+int main ( string[] args )
 
 in {
     // there's something seriously wonky if this ever trips...
@@ -68,9 +66,8 @@ body {
 }
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//==================================================================================================
 private:
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /**
@@ -122,9 +119,7 @@ struct Options
     /**
      *
      */
-    void parse (
-        string[]    args
-    )
+    void parse ( string[] args )
 
     in {
         assert( args.length != 0 );
@@ -158,10 +153,9 @@ struct Options
     /**
      *
      */
-    void showHelp ()
+    void showHelp () {
+        import std.stdio : writefln;
 
-    body {
-        import std.stdio : writeln, writefln;
         writefln( HELP_FMT, command, DEFAULT_DB, db, log, DEFAULT_PORT, port );
     }
 
@@ -172,9 +166,7 @@ struct Options
 /**
  *
  */
-void shutdown ()
-
-body {
+void shutdown () {
     import moo.log;
     import moo.db.db;
 
@@ -187,11 +179,7 @@ body {
 /**
  *
  */
-void startup (
-    Options options
-)
-
-body {
+void startup ( Options options ) {
     import moo.log;
     import moo.db.db;
     
@@ -204,9 +192,7 @@ body {
 /**
  *
  */
-ExitCode uncaughtException (
-    Exception x
-)
+ExitCode uncaughtException ( Exception x )
 
 in {
     assert( x !is null );

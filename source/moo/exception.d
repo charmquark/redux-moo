@@ -47,32 +47,28 @@ class ExitCodeException : Exception
     /**
      *
      */
+    @safe pure nothrow
     this (
         ExitCode    code    ,
         string      msg     ,
         string      file    = __FILE__,
         size_t      line    = __LINE__,
         Throwable   next    = null
-    ) 
-    @safe pure nothrow
-
-    body {
+    ) {
         super( msg, file, line, next );
         this.code = code;
     }
 
     
     ///ditto
+    @safe pure nothrow
     this (
         ExitCode    code    ,
         string      msg     ,
         Throwable   next    ,
         string      file    = __FILE__,
         size_t      line    = __LINE__
-    )
-    @safe pure nothrow
-
-    body {
+    ) {
         this( code, msg, file, line, next );
     }
 
@@ -91,20 +87,16 @@ class ExitCodeException : Exception
  */
 template enforceEx ( E ) {
     static import std.exception;
-    
+
     static if ( is( E : ExitCodeException ) ) {
-        T enforceEx (
-            T
-        ) (
+        @safe pure
+        T enforceEx ( T ) (
             T           value   ,
             ExitCode    code    ,
             lazy string msg     = ``,
             string      file    = __FILE__,
             size_t      line    = __LINE__
-        )
-        @safe pure
-        
-        body {
+        ) {
             if ( !value ) {
                 throw new E( code, msg, file, line );
             }
@@ -120,9 +112,7 @@ template enforceEx ( E ) {
 /**
  *
  */
-template exitCodeEnforce (
-    string CodeName
-) {
+template exitCodeEnforce ( string CodeName ) {
     static if ( __traits( hasMember, ExitCode, CodeName ) ) {
         alias exitCodeEnforce = exitCodeEnforce!( __traits( getMember, ExitCode, CodeName ) );
     }
@@ -132,20 +122,14 @@ template exitCodeEnforce (
 }
 
 ///ditto
-template exitCodeEnforce (
-    ExitCode Code
-) {
-    T exitCodeEnforce (
-        T
-    ) (
+template exitCodeEnforce ( ExitCode Code ) {
+    @safe pure
+    T exitCodeEnforce ( T ) (
         T           value   ,
         lazy string msg     = ``,
         string      file    = __FILE__,
         size_t      line    = __LINE__
-    )
-    @safe pure
-    
-    body {
+    ) {
         return enforceEx!ExitCodeException( value, Code, msg, file, line );
     }
 }

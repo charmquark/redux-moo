@@ -31,10 +31,8 @@ final class Database
     /**
      *
      */
-    static Database instance ()
     @property
-
-    body {
+    static Database instance () {
         if ( !_instantiated ) {
             synchronized {
                 if ( _instance is null ) {
@@ -50,32 +48,13 @@ final class Database
     /**
      *
      */
-    private static bool _instantiated = false;
-
-
-    /**
-     *
-     */
-    private static __gshared typeof( this ) _instance;
-
-
-    /**
-     *
-     */
     private this () {}
 
 
-    //==========================================================================================
-
-
     /**
      *
      */
-    void start (
-        string  path
-    )
-
-    body {
+    void start ( string  path ) {
         _log = Logger( `database` );
     }
 
@@ -83,14 +62,23 @@ final class Database
     /**
      *
      */
-    void stop ()
-
-    body {
-    }
+    void stop () {}
 
 
     //==========================================================================================
     private:
+
+
+    /**
+     *
+     */
+    static bool _instantiated = false;
+
+
+    /**
+     *
+     */
+    static __gshared typeof( this ) _instance;
 
 
     /**

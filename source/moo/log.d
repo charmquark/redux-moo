@@ -60,9 +60,7 @@ struct Logger
     /**
      *
      */
-     static void stop ()
-     
-     body {
+     static void stop () {
         import std.file : append;
         
         if ( _path != null ) {
@@ -76,11 +74,7 @@ struct Logger
     /**
      *
      */
-    this (
-        string a_label = null
-    )
-
-    body {
+    this ( string a_label = null ) {
         _label = a_label;
     }
 
@@ -88,11 +82,7 @@ struct Logger
     /**
      *
      */
-    void write (
-        string msg
-    )
-
-    body {
+    void write ( string msg ) {
         _write( prepare( msg ) );
     }
 
@@ -100,11 +90,7 @@ struct Logger
     /**
      *
      */
-    void verboseWrite (
-        lazy string msg
-    )
-
-    body {
+    void verboseWrite ( lazy string msg ) {
         if ( _verbose ) {
             write( msg() );
         }
@@ -114,14 +100,10 @@ struct Logger
     /**
      *
      */
-    void writef (
-        Args...
-    ) (
+    void writef ( Args... ) (
         string  fmt     ,
         Args    args
-    )
-
-    body {
+    ) {
         import std.string : format;
 
         write( fmt.format( args ) );
@@ -131,14 +113,10 @@ struct Logger
     /**
      *
      */
-    void verboseWritef (
-        Args...
-    ) (
+    void verboseWritef ( Args... ) (
         string  fmt     ,
         Args    args
-    )
-
-    body {
+    ) {
         if ( _verbose ) {
             writef( fmt, args );
         }
@@ -164,11 +142,7 @@ struct Logger
     /**
      *
      */
-    static void _write (
-        string text
-    )
-
-    body {
+    static void _write ( string text ) {
         import std.file : append;
 
         synchronized {
@@ -187,11 +161,7 @@ struct Logger
     /**
      *
      */
-    string prepare (
-        string msg
-    )
-
-    body {
+    string prepare ( string msg ) {
         import std.array    : appender  ;
         import std.datetime : Clock     ;
 
