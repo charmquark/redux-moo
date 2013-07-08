@@ -25,6 +25,7 @@ module moo.db.db;
  */
 final class Database
 {
+    import moo.log;
 
 
     /**
@@ -71,11 +72,11 @@ final class Database
      *
      */
     void start (
-        string  path    ,
-        bool    verbose
+        string  path
     )
 
     body {
+        _log = Logger( `database` );
     }
 
 
@@ -86,6 +87,16 @@ final class Database
 
     body {
     }
+
+
+    //==========================================================================================
+    private:
+
+
+    /**
+     *
+     */
+    Logger _log;
 
 
 } // end Database

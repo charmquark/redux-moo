@@ -180,6 +180,7 @@ body {
 
     Database.instance.stop();
     Logger( `shutdown` ).write( `Goodbye.` );
+    Logger.stop();
 }
 
 
@@ -196,7 +197,7 @@ body {
     
     Logger.start( options.log, options.verbose );
     Logger( `startup` ).writef( `Starting ReduxMOO %s`, APP_VERSION );
-    Database.instance.start( options.db, options.verbose );
+    Database.instance.start( options.db );
 }
 
 

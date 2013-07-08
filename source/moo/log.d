@@ -30,13 +30,7 @@ struct Logger
     /**
      *
      */
-    private static __gshared string _path = null;
-
-
-    /**
-     *
-     */
-    private static __gshared bool _verbose = false;
+    static enum SEP = ` -- `;
 
 
     /**
@@ -66,6 +60,22 @@ struct Logger
     /**
      *
      */
+     static void stop ()
+     
+     body {
+        import std.file : append;
+        
+        if ( _path != null ) {
+            synchronized {
+                _path.append( `==================================================` );
+            }
+        }
+     }
+
+
+    /**
+     *
+     */
     this (
         string a_label = null
     )
@@ -73,10 +83,6 @@ struct Logger
     body {
         _label = a_label;
     }
-
-
-    //==========================================================================================
-    public:
 
 
     /**
@@ -87,12 +93,7 @@ struct Logger
     )
 
     body {
-        import std.file : append;
-
-        auto text = prepare( msg );
-        synchronized {
-            _path.append( text );
-        }
+        _write( prepare( msg ) );
     }
 
 
@@ -151,6 +152,35 @@ struct Logger
     /**
      *
      */
+    static __gshared string _path = null;
+
+
+    /**
+     *
+     */
+    static __gshared bool _verbose = false;
+
+
+    /**
+     *
+     */
+    static void _write (
+        string text
+    )
+
+    body {
+        import std.file : append;
+
+        synchronized {
+            _path.append( text );
+            _path.append( "\n" );
+        }
+    }
+
+
+    /**
+     *
+     */
     string _label = null;
 
 
@@ -166,15 +196,13 @@ struct Logger
         import std.datetime : Clock     ;
 
         auto result = appender!string();
-        result.put( `[` );
         result.put( Clock.currTime().toSimpleString() );
-        result.put( `] ` );
+        result.put( SEP );
         if ( _label != null ) {
             result.put( _label );
-            result.put( `: ` );
+            result.put( SEP );
         }
         result.put( msg );
-        result.put( "\n" );
         return result.data;
     }
 
