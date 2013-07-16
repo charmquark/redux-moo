@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *
+ *  ReduxMOO is an implementation and expansion of the LambdaMOO server.
  */
 module moo.app;
 
@@ -23,13 +23,19 @@ import moo.exception;
 
 
 /**
- *
+ *  Application version.
  */
 enum APP_VERSION = `0.1.0-alpha`;
 
 
 /**
+ *  Main function.
  *
+ *  Params:
+ *      args = command line arguments
+ *
+ *  Returns: program exit code; 0 meaning success, >0 meaning error.  See module moo.exception for
+ *      details.
  */
 int main ( string[] args )
 
@@ -71,7 +77,7 @@ private:
 
 
 /**
- *
+ *  Program options.
  */
 struct Options
 {
@@ -91,17 +97,20 @@ struct Options
     ;
 
     public {
-        string  command = void,
-                db      = DEFAULT_DB,
-                log     = null;
-        ushort  port    = DEFAULT_PORT;
-        bool    help    = false,
-                verbose = false;
+        string  command = void,         /// actual system command used to execute the server
+                db      = DEFAULT_DB,   /// path to database
+                log     = null;         /// path to log file
+        ushort  port    = DEFAULT_PORT; /// port to bind the default listener
+        bool    help    = false,        /// whether to show the help/usage text
+                verbose = false;        /// whether to log verbose messages
     }
 
 
     /**
+     *  Parse options from the command line.
      *
+     *  Params:
+     *      args = command line
      */
     void parse ( string[] args )
 
@@ -135,12 +144,12 @@ struct Options
 
 
     /**
-     *
+     *  Write the help/usage text to stdout.
      */
     void showHelp () {
-        import std.stdio : writefln;
+        import std.stdio : stdout;
 
-        writefln( HELP_FMT, command, DEFAULT_DB, db, log, DEFAULT_PORT, port );
+        stdout.writefln( HELP_FMT, command, DEFAULT_DB, db, log, DEFAULT_PORT, port );
     }
 
 
@@ -148,7 +157,7 @@ struct Options
 
 
 /**
- *
+ *  Stop the server.
  */
 void shutdown () {
     import moo.log;
@@ -161,7 +170,7 @@ void shutdown () {
 
 
 /**
- *
+ *  Start the server.
  */
 void startup ( Options options ) {
     import moo.log;
@@ -174,7 +183,12 @@ void startup ( Options options ) {
 
 
 /**
+ *  Write information about a terminating exception to stderr.
  *
+ *  Params:
+ *      x = the uncaught exception
+ *
+ *  Returns: the exit code provided by the exception, or the generic error code if there is none.
  */
 ExitCode uncaughtException ( Exception x )
 

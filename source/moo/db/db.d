@@ -15,13 +15,13 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *
+ *  Primary database interface.
  */
 module moo.db.db;
 
 
 /**
- *
+ *  Primary database interface, as a singleton object.
  */
 final class Database
 {
@@ -32,12 +32,18 @@ final class Database
 
 
     private {
-        Logger _log;
+        Logger _log;    /// Logger interface.
     }
 
 
     /**
+     *  Start the database subsystem.
      *
+     *  Params:
+     *      path = file path to the database
+     *
+     *  Throws: ExitCodeException if called on an active database, or if the database fails to load
+     *      and validate.
      */
     void start ( string  path ) {
         import moo.exception;
@@ -49,7 +55,7 @@ final class Database
 
 
     /**
-     *
+     *  Stop the database system.
      */
     void stop () {}
 
@@ -59,7 +65,10 @@ final class Database
 
 
     /**
+     *  Load a database from disc.
      *
+     *  Params:
+     *      path = file path to the database
      */
     void load ( string path ) {
         _log( `Loading database from %s`, path );
@@ -67,7 +76,9 @@ final class Database
 
 
     /**
+     *  Validate a loaded database.
      *
+     *  Returns: true for a verifiably valid database, false otherwise.
      */
     bool validate () { return false; } //TODO
 

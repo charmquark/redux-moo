@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *
+ *  Application-specific exception handling code.
  */
 module moo.exception;
 
@@ -23,29 +23,41 @@ import ErrNo = core.stdc.errno;
 
 
 /**
- *
+ *  Exit codes which may be carried by instances of ExitCodeException, and therefore returned from
+ *  the main function.
  */
 enum ExitCode : int {
-    OK              = 0,
-    GENERIC         = 1,
-    PERMS           = ErrNo.EPERM,
-    FILE_NOT_FOUND  = ErrNo.ENOENT,
-    INVALID_ARG     = ErrNo.EINVAL,
-    INTERNAL        = 253,
-    INVALID_DB      = 254,
-    UNKNOWN         = 255
+    OK              = 0,            /// indicates success (the non-error)
+    GENERIC         = 1,            /// an unspecified error has occurred
+    PERMS           = ErrNo.EPERM,  /// the program lacks needed filesystem/network permissions
+    FILE_NOT_FOUND  = ErrNo.ENOENT, /// a file (likely the database file) was not found
+    INVALID_ARG     = ErrNo.EINVAL, /// an invalid command line argument was provided
+    INTERNAL        = 253,          /// an unspecified internal error has occurred
+    INVALID_DB      = 254,          /// a loaded database failed validation
+    UNKNOWN         = 255           /// something seriously went wrong, so wrong we don't know what
 }
 
 
 /**
- *
+ *  An exception class that carries an exit code.
  */
 class ExitCodeException : Exception
 {
 
+    public {
+        ExitCode code;  /// Exit code payload.
+    }
+
 
     /**
+     *  Constructor.
      *
+     *  Params:
+     *      code    = exit code payload
+     *      msg     = (hopefully) meaningful description of what went wrong
+     *      file    = (normally left defaulted) the file (module) where the exception occurred
+     *      line    = (normally left defaulted) the line where the exception occurred
+     *      next    = an exception to be considered the 'cause' of this one, or otherwise related
      */
     @safe pure nothrow
     this (
@@ -73,17 +85,13 @@ class ExitCodeException : Exception
     }
 
 
-    /**
-     *
-     */
-    ExitCode code;
-
-
 } // end ExitCodeException
 
 
 /**
- *
+ *  A specialization of std.exception.enforceEx that appropriately handles the ExitCodeException, by
+ *  accepting an ExitCode before the message.  Normally, this won't be used directly, but instead
+ *  the exitCodeEnforce function would be used.
  */
 template enforceEx ( E ) {
     static import std.exception;
@@ -110,7 +118,12 @@ template enforceEx ( E ) {
 
 
 /**
+ *  Mimics std.exception.enforce but throws an ExitCodeException.  May be instantiated with either
+ *  an ExitCode or a string reflecting a member of the ExitCode enum.
  *
+ *  ---
+ *  exitCodeEnforce!`INVALID_DB`( validate(), `Database in ` ~ path ~ ` fails validation.`);
+ *  ---
  */
 template exitCodeEnforce ( string CodeName ) {
     static if ( __traits( hasMember, ExitCode, CodeName ) ) {

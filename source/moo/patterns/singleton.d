@@ -15,13 +15,13 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *
+ *  Mixin implementation of the low-lock singleton pattern.
  */
 module moo.patterns.singleton;
 
 
 /**
- *
+ *  Standard implementation.
  */
 mixin template Singleton () {
     alias This = typeof( this );
@@ -29,14 +29,16 @@ mixin template Singleton () {
 
     private {
         static {
-            bool            _instantiated   = false;
-            __gshared This  _instance       ;
+            bool            _instantiated   = false;    /// Thread-local instance indicator.
+            __gshared This  _instance       ;           /// Global shared instance.
         }
     }
 
 
     /**
+     *  Singleton instance retrieval.
      *
+     *  Returns: the global shared instance.
      */
     @property
     static This instance () {
@@ -53,7 +55,7 @@ mixin template Singleton () {
 
 
     /**
-     *
+     *  Default constructor.  Made private to prevent instances other than the managed one.
      */
     private this () {}
 
