@@ -26,20 +26,25 @@ module moo.log;
 struct Logger
 {
 
-
-    /**
-     *
-     */
     static enum SEP = ` -- `;
 
 
+    alias opCall = write;
+
+
+    private {
+        static {
+            __gshared string    _path       = null;
+            __gshared bool      _verbose    = false;
+        }
+        string _label = null;
+    }
+
+
     /**
      *
      */
-    static void start (
-        string  path,
-        bool    verbose
-    )
+    static void start ( string path, bool verbose )
 
     in {
         assert( path != null );
@@ -62,7 +67,7 @@ struct Logger
      */
      static void stop () {
         import std.file : append;
-        
+
         if ( _path != null ) {
             synchronized {
                 _path.append( `==================================================` );
@@ -82,17 +87,14 @@ struct Logger
     /**
      *
      */
-    void write ( string msg ) {
-        _write( prepare( msg ) );
-    }
+    void write ( Args... ) ( string msg, Args args ) {
+        static if ( Args.length == 0 ) {
+            _write( prepare( msg ) );
+        }
+        else {
+            import std.string : format;
 
-
-    /**
-     *
-     */
-    void verboseWrite ( lazy string msg ) {
-        if ( _verbose ) {
-            write( msg() );
+            _write( prepare( msg.format( args ) ) );
         }
     }
 
@@ -100,43 +102,15 @@ struct Logger
     /**
      *
      */
-    void writef ( Args... ) (
-        string  fmt     ,
-        Args    args
-    ) {
-        import std.string : format;
-
-        write( fmt.format( args ) );
-    }
-
-
-    /**
-     *
-     */
-    void verboseWritef ( Args... ) (
-        string  fmt     ,
-        Args    args
-    ) {
+    void verbose ( Args... ) ( lazy string msg, Args args ) {
         if ( _verbose ) {
-            writef( fmt, args );
+            write( msg(), args );
         }
     }
 
 
     //==========================================================================================
     private:
-
-
-    /**
-     *
-     */
-    static __gshared string _path = null;
-
-
-    /**
-     *
-     */
-    static __gshared bool _verbose = false;
 
 
     /**
@@ -150,12 +124,6 @@ struct Logger
             _path.append( "\n" );
         }
     }
-
-
-    /**
-     *
-     */
-    string _label = null;
 
 
     /**

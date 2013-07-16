@@ -17,60 +17,47 @@
 /**
  *
  */
-module moo.db.db;
+module moo.patterns.singleton;
 
 
 /**
  *
  */
-final class Database
-{
-    import moo.log;
-    import moo.patterns.singleton;
-
-    mixin Singleton;
+mixin template Singleton () {
+    alias This = typeof( this );
 
 
     private {
-        Logger _log;
+        static {
+            bool            _instantiated   = false;
+            __gshared This  _instance       ;
+        }
     }
 
 
     /**
      *
      */
-    void start ( string  path ) {
-        import moo.exception;
-
-        _log = Logger( `database` );
-        load( path );
-        exitCodeEnforce!`INVALID_DB`( validate(), `Database in ` ~ path ~ ` fails validation.`);
+    @property
+    static This instance () {
+        if ( !_instantiated ) {
+            synchronized {
+                if ( _instance is null ) {
+                    _instance = new This;
+                }
+                _instantiated = true;
+            }
+        }
+        return _instance;
     }
 
 
     /**
      *
      */
-    void stop () {}
+    private this () {}
 
 
-    //==========================================================================================
-    private:
+} // end Singleton
 
-
-    /**
-     *
-     */
-    void load ( string path ) {
-        _log( `Loading database from %s`, path );
-    }
-
-
-    /**
-     *
-     */
-    bool validate () { return false; } //TODO
-
-
-} // end Database
 

@@ -77,23 +77,9 @@ struct Options
 {
     import std.getopt;
 
-
-    /**
-     *
-     */
-    enum DEFAULT_DB = `moo.db`;
-
-
-    /**
-     *
-     */
-    enum DEFAULT_PORT = 11000;
-
-
-    /**
-     *
-     */
-    enum HELP_FMT = 
+    enum DEFAULT_DB     = `moo.db`;
+    enum DEFAULT_PORT   = 11000;
+    enum HELP_FMT       =
         "USAGE: %s <options>\n"
         "\n"
         "OPTIONS:\n"
@@ -104,16 +90,14 @@ struct Options
         "    -v  --verbose      Verbose program output.\n"
     ;
 
-
-    /**
-     *
-     */
-    string  command = void,
-            db      = DEFAULT_DB,
-            log     = null;
-    ushort  port    = DEFAULT_PORT;
-    bool    help    = false,
-            verbose = false;
+    public {
+        string  command = void,
+                db      = DEFAULT_DB,
+                log     = null;
+        ushort  port    = DEFAULT_PORT;
+        bool    help    = false,
+                verbose = false;
+    }
 
 
     /**
@@ -171,7 +155,7 @@ void shutdown () {
     import moo.db.db;
 
     Database.instance.stop();
-    Logger( `shutdown` ).write( `Goodbye.` );
+    Logger( `shutdown` )( `Goodbye.` );
     Logger.stop();
 }
 
@@ -182,9 +166,9 @@ void shutdown () {
 void startup ( Options options ) {
     import moo.log;
     import moo.db.db;
-    
+
     Logger.start( options.log, options.verbose );
-    Logger( `startup` ).writef( `Starting ReduxMOO %s`, APP_VERSION );
+    Logger( `startup` )( `Starting ReduxMOO %s`, APP_VERSION );
     Database.instance.start( options.db );
 }
 
