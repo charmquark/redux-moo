@@ -19,69 +19,125 @@
  */
 module moo.db.db;
 
+import moo.log;
+import moo.db.object;
+import moo.db.loader;
+
 
 /**
- *  Primary database interface, as a singleton object.
+ *  Start the database subsystem.
+ *
+ *  Params:
+ *      path = file path to the database
+ *
+ *  Throws: ExitCodeException if called on an active database, or if the database fails to load and
+ *      validate.
  */
-final class Database
-{
-    import moo.log;
-    import moo.patterns.singleton;
+void db_start ( string path ) {
+    import moo.exception;
 
-    mixin Singleton;
+    exitCodeEnforce!`UNKNOWN`( !active, `db_start() called on an active database.` );
+    log = Logger( `database` );
+    db_load( path );
+    exitCodeEnforce!`INVALID_DB`( db_validate(), `Database in ` ~ path ~ ` fails validation.` );
+    active = true;
+}
 
 
-    private {
-        Logger _log;    /// Logger interface.
+/**
+ *  Stop the database system.
+ */
+void db_stop () {
+    if ( active ) {
+        active = false;
+    }
+}
+
+
+//==================================================================================================
+package:
+
+
+/**
+ *  Reserves a minimum number of slots in the database.  Primarily intended for use by loaders.
+ *  Does nothing if at least requestedSize slots are already available.
+ *
+ *  Params:
+ *      requestedSize     = requested minimum size
+ *      shouldInstantiate = whether to create object to fill any new slots created (default true)
+ */
+void db_reserve (
+    size_t requestedSize, 
+    bool shouldInstantiate = true
+)
+
+in {
+    assert( requestedSize > 0, `Tried to reserve a zero-length database.` );
+}
+
+body {
+    if ( world.length < requestedSize ) {
+        log.verbose( `Reserving %s slots.`, requestedSize );
+        auto oldLength = world.length;
+        world.length = requestedSize;
+        if ( shouldInstantiate ) {
+            foreach ( index, ref elem ; world[ oldLength .. $ ] ) {
+                elem = new MObject( index );
+            }
+        }
+    }
+}
+
+
+//==================================================================================================
+private:
+
+
+bool        active  = false ;   ///
+Logger      log             ;   /// Logger interface.
+MObject[]   world           ;   ///
+
+
+/**
+ *  Load a database from disc.
+ *
+ *  Params:
+ *      path = file path to the database
+ */
+void db_load ( string path ) {
+    import std.stdio;
+    import moo.exception;
+
+    {
+        import std.file : exists;
+        exitCodeEnforce!`FILE_NOT_FOUND`( path.exists(), `Did not find database file ` ~ path ~ `.` );
     }
 
+    log.verbose( `Loading database from %s`, path );
+    auto file = File( path, `r` );
 
-    /**
-     *  Start the database subsystem.
-     *
-     *  Params:
-     *      path = file path to the database
-     *
-     *  Throws: ExitCodeException if called on an active database, or if the database fails to load
-     *      and validate.
-     */
-    void start ( string  path ) {
-        import moo.exception;
-
-        _log = Logger( `database` );
-        load( path );
-        exitCodeEnforce!`INVALID_DB`( validate(), `Database in ` ~ path ~ ` fails validation.`);
+    Loader loader;
+    try {
+        loader = db_selectLoader( file );
+        loader.load();
     }
-
-
-    /**
-     *  Stop the database system.
-     */
-    void stop () {}
-
-
-    //==========================================================================================
-    private:
-
-
-    /**
-     *  Load a database from disc.
-     *
-     *  Params:
-     *      path = file path to the database
-     */
-    void load ( string path ) {
-        _log( `Loading database from %s`, path );
+    catch ( Exception x ) {
+        throw new ExitCodeException( ExitCode.UNKNOWN, `Database loader failed.`, x );
     }
+    finally {
+        if ( loader !is null ) {
+            loader.destroy();
+        }
+    }
+}
 
 
-    /**
-     *  Validate a loaded database.
-     *
-     *  Returns: true for a verifiably valid database, false otherwise.
-     */
-    bool validate () { return false; } //TODO
-
-
-} // end Database
+/**
+ *  Validate a loaded database.
+ *
+ *  Returns: true for a verifiably valid database, false otherwise.
+ */
+bool db_validate () {  //TODO
+    debug { return true; } else { return false; }
+}
 

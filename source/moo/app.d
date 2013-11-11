@@ -54,17 +54,25 @@ body {
             options.showHelp();
         }
         else {
-            startup( options );
-            shutdown();
+            app_startup( options );
+            app_shutdown();
         }
     }
     catch ( Exception x ) {
-        exitCode = uncaughtException( x );
+        import std.stdio : stderr;
+
+        debug   { stderr.writeln( x.toString() );       }
+        else    { stderr.writeln( `ERROR: `, x.msg );   }
+
+        if ( auto xx = cast( ExitCodeException ) x ) {
+            exitCode = xx.code;
+        }
+        else {
+            exitCode = ExitCode.GENERIC;
+        }
+
         if ( options.help ) {
-            try {
-                options.showHelp();
-            }
-            catch ( Exception ignore ) {}
+            options.showHelp( true /*ignore exceptions*/ );
         }
     }
 
@@ -104,6 +112,10 @@ struct Options
         bool    help    = false,        /// whether to show the help/usage text
                 verbose = false;        /// whether to log verbose messages
     }
+
+
+    //==========================================================================================
+    private:
 
 
     /**
@@ -146,10 +158,17 @@ struct Options
     /**
      *  Write the help/usage text to stdout.
      */
-    void showHelp () {
+    void showHelp ( bool ignoreExceptions = false ) {
         import std.stdio : stdout;
 
-        stdout.writefln( HELP_FMT, command, DEFAULT_DB, db, log, DEFAULT_PORT, port );
+        try {
+            stdout.writefln( HELP_FMT, command, DEFAULT_DB, db, log, DEFAULT_PORT, port );
+        }
+        catch ( Exception x ) {
+            if ( !ignoreExceptions ) {
+                throw x;
+            }
+        }
     }
 
 
@@ -159,55 +178,25 @@ struct Options
 /**
  *  Stop the server.
  */
-void shutdown () {
+void app_shutdown () {
     import moo.log;
     import moo.db.db;
 
-    Database.instance.stop();
+    db_stop();
     Logger( `shutdown` )( `Goodbye.` );
-    Logger.stop();
+    log_stop();
 }
 
 
 /**
  *  Start the server.
  */
-void startup ( Options options ) {
+void app_startup ( Options options ) {
     import moo.log;
     import moo.db.db;
 
-    Logger.start( options.log, options.verbose );
+    log_start( options.log, options.verbose );
     Logger( `startup` )( `Starting ReduxMOO %s`, APP_VERSION );
-    Database.instance.start( options.db );
-}
-
-
-/**
- *  Write information about a terminating exception to stderr.
- *
- *  Params:
- *      x = the uncaught exception
- *
- *  Returns: the exit code provided by the exception, or the generic error code if there is none.
- */
-ExitCode uncaughtException ( Exception x )
-
-in {
-    assert( x !is null );
-}
-
-body {
-    import  std.stdio : stderr  ;
-
-    debug {
-        stderr.writeln( x.toString() );
-    }
-    else {
-        stderr.writeln( "ERROR: ", x.msg );
-    }
-    if ( auto xx = cast( ExitCodeException ) x ) {
-        return xx.code;
-    }
-    return ExitCode.GENERIC;
+    db_start( options.db );
 }
 

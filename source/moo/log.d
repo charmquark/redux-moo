@@ -19,6 +19,8 @@
  */
 module moo.log;
 
+import core.sync.mutex;
+
 
 /**
  *  The logger interface.
@@ -26,61 +28,8 @@ module moo.log;
 struct Logger
 {
 
-    static enum SEP = ` -- `;
-
 
     alias opCall = write;
-
-
-    private {
-        static {
-            __gshared string    _path       = null;     /// Global shared log file path.
-            __gshared bool      _verbose    = false;    /// Global shared verbosity flag.
-        }
-        string _label = null;   /// Copy-local log message label.
-    }
-
-
-    /**
-     *  Start the logger system.
-     *
-     *  Params:
-     *      path    = log file path
-     *      verbose = verbosity flag
-     *
-     *  Throws: ExitCodeException if started twice.
-     */
-    static void start ( string path, bool verbose )
-
-    in {
-        assert( path != null );
-        assert( path != `` );
-    }
-
-    body {
-        import moo.exception;
-
-        synchronized {
-            //TODO -- Should we simply "do nothing" when called twice, rather than throw?
-            exitCodeEnforce!`GENERIC`( _path == null, `Tried to start logger twice.` );
-            _path = path;
-            _verbose = verbose;
-        }
-    }
-
-
-    /**
-     *  Stop the logger system.
-     */
-     static void stop () {
-        import std.file : append;
-
-        if ( _path != null ) {
-            synchronized {
-                _path.append( `==================================================` );
-            }
-        }
-     }
 
 
     /**
@@ -104,12 +53,12 @@ struct Logger
      */
     void write ( Args... ) ( string msg, Args args ) {
         static if ( Args.length == 0 ) {
-            _write( prepare( msg ) );
+            log_write( prepare( msg ) );
         }
         else {
             import std.string : format;
 
-            _write( prepare( msg.format( args ) ) );
+            log_write( prepare( msg.format( args ) ) );
         }
     }
 
@@ -123,7 +72,7 @@ struct Logger
      *      args    = formatting arguments
      */
     void verbose ( Args... ) ( lazy string msg, Args args ) {
-        if ( _verbose ) {
+        if ( verbosity ) {
             write( msg(), args );
         }
     }
@@ -133,20 +82,7 @@ struct Logger
     private:
 
 
-    /**
-     *  Actually writes text to the log file.
-     *
-     *  Params:
-     *      text = the text to be written
-     */
-    static void _write ( string text ) {
-        import std.file : append;
-
-        synchronized {
-            _path.append( text );
-            _path.append( "\n" );
-        }
-    }
+    string _label = null;   /// Copy-local log message label.
 
 
     /**
@@ -163,10 +99,10 @@ struct Logger
 
         auto result = appender!string();
         result.put( Clock.currTime().toSimpleString() );
-        result.put( SEP );
+        result.put( SEPARATOR );
         if ( _label != null ) {
             result.put( _label );
-            result.put( SEP );
+            result.put( SEPARATOR );
         }
         result.put( msg );
         return result.data;
@@ -175,3 +111,79 @@ struct Logger
 
 } // end Logger
 
+
+/**
+ *  Start the logger system.
+ *
+ *  Params:
+ *      path    = log file path
+ *      verbose = verbosity flag
+ *
+ *  Throws: ExitCodeException if started twice.
+ */
+void log_start ( string logPath, bool verbosityFlag )
+
+in {
+    assert( logPath != null );
+    assert( logPath != `` );
+}
+
+body {
+    import moo.exception;
+
+    synchronized ( mutex ) {
+        exitCodeEnforce!`GENERIC`( !active, `Tried to start logger twice.` );
+        path = logPath;
+        verbosity = verbosityFlag;
+        active = true;
+    }
+}
+
+
+/**
+ *  Stop the logger system.
+ */
+void log_stop () {
+    import std.file : append;
+
+    synchronized ( mutex ) {
+        if ( active ) {
+            log_write( `==================================================` );
+            active = false;
+        }
+    }
+}
+
+
+//==================================================================================================
+private:
+
+
+enum SEPARATOR = ` -- `;
+
+
+shared static this () {
+    mutex = new Mutex;
+}
+
+
+__gshared bool      active      = false ;   /// 
+__gshared Mutex     mutex       = null  ;   /// 
+__gshared string    path        = null  ;   /// Global shared log file path.
+__gshared bool      verbosity   = false ;   /// Global shared verbosity flag.
+
+
+/**
+ *  Actually writes text to the log file.
+ *
+ *  Params:
+ *      text = the text to be written
+ */
+void log_write ( string text ) {
+    import std.file : append;
+
+    synchronized ( mutex ) {
+        path.append( text );
+        path.append( "\n" );
+    }
+}
