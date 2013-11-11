@@ -105,9 +105,8 @@ template enforceEx ( E ) {
             string      file    = __FILE__,
             size_t      line    = __LINE__
         ) {
-            if ( !value ) {
+            if ( !value )
                 throw new E( code, msg(), file, line );
-            }
             return value;
         }
     }

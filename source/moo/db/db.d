@@ -81,9 +81,8 @@ body {
         auto oldLength = world.length;
         world.length = requestedSize;
         if ( shouldInstantiate ) {
-            foreach ( index, ref elem ; world[ oldLength .. $ ] ) {
+            foreach ( index, ref elem ; world[ oldLength .. $ ] )
                 elem = new MObject( index );
-            }
         }
     }
 }
@@ -117,17 +116,13 @@ void db_load ( string path ) {
     auto file = File( path, `r` );
 
     Loader loader;
+    scope( exit ) if ( loader !is null ) destroy( loader );
     try {
         loader = db_selectLoader( file );
         loader.load();
     }
     catch ( Exception x ) {
         throw new ExitCodeException( ExitCode.UNKNOWN, `Database loader failed.`, x );
-    }
-    finally {
-        if ( loader !is null ) {
-            loader.destroy();
-        }
     }
 }
 

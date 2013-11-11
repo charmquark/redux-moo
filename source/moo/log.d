@@ -20,6 +20,28 @@
 module moo.log;
 
 import core.sync.mutex;
+import std.stdio : File;
+
+
+private {
+    enum SEPARATOR = ` -- `;
+
+
+    __gshared Mutex     mutex       = null  ;   /// 
+    __gshared File      file                ;   /// Global shared log file
+    __gshared bool      verbosity   = false ;   /// Global shared verbosity flag.
+
+
+    debug {
+        __gshared bool active = false ;   /// 
+    }
+
+
+    shared
+    static this () {
+        mutex = new Mutex;
+    }
+}
 
 
 /**
@@ -29,7 +51,9 @@ struct Logger
 {
 
 
-    alias opCall = write;
+    private {
+        string _label = null;   /// Copy-local log message label.
+    }
 
 
     /**
@@ -39,7 +63,7 @@ struct Logger
      *      a_label = copy-local log message label
      */
     this ( string a_label = null ) {
-        _label = a_label;
+        _label = a_label ~ SEPARATOR;
     }
 
 
@@ -52,15 +76,11 @@ struct Logger
      *      args    = formatting arguments
      */
     void write ( Args... ) ( string msg, Args args ) {
-        static if ( Args.length == 0 ) {
-            log_write( prepare( msg ) );
-        }
-        else {
-            import std.string : format;
-
-            log_write( prepare( msg.format( args ) ) );
-        }
+        log_write( _label, msg, args );
     }
+
+    ///ditto
+    alias opCall = write;
 
 
     /**
@@ -72,17 +92,13 @@ struct Logger
      *      args    = formatting arguments
      */
     void verbose ( Args... ) ( lazy string msg, Args args ) {
-        if ( verbosity ) {
+        if ( verbosity )
             write( msg(), args );
-        }
     }
 
 
     //==========================================================================================
     private:
-
-
-    string _label = null;   /// Copy-local log message label.
 
 
     /**
@@ -132,25 +148,12 @@ body {
     import moo.exception;
 
     synchronized ( mutex ) {
-        exitCodeEnforce!`GENERIC`( !active, `Tried to start logger twice.` );
-        path = logPath;
-        verbosity = verbosityFlag;
-        active = true;
-    }
-}
-
-
-/**
- *  Stop the logger system.
- */
-void log_stop () {
-    import std.file : append;
-
-    synchronized ( mutex ) {
-        if ( active ) {
-            log_write( `==================================================` );
-            active = false;
+        debug {
+            exitCodeEnforce!`GENERIC`( !active, `Tried to start logger twice.` );
+            active = true;
         }
+        file = File( logPath, `a` );
+        verbosity = verbosityFlag;
     }
 }
 
@@ -159,31 +162,39 @@ void log_stop () {
 private:
 
 
-enum SEPARATOR = ` -- `;
-
-
-shared static this () {
-    mutex = new Mutex;
-}
-
-
-__gshared bool      active      = false ;   /// 
-__gshared Mutex     mutex       = null  ;   /// 
-__gshared string    path        = null  ;   /// Global shared log file path.
-__gshared bool      verbosity   = false ;   /// Global shared verbosity flag.
-
-
 /**
  *  Actually writes text to the log file.
  *
  *  Params:
  *      text = the text to be written
  */
-void log_write ( string text ) {
-    import std.file : append;
+void log_write ( Args... ) ( string label, string msg, Args args ) {
+    import std.array    : appender  ;
+    import std.datetime : Clock     ;
+    import std.string   : sformat   ;
+
+    import moo.exception;
+
+    static text = appender!string();
+    static char[ 1024 ] buffer;
+
+    text.put( Clock.currTime().toSimpleString() );
+    text.put( SEPARATOR );
+    if ( label != null )
+        text.put( label );
+
+    static if ( Args.length == 0 ) {
+        text.put( msg );
+    }
+    else {
+        text.put( sformat( buffer, msg, args ) );
+    }
 
     synchronized ( mutex ) {
-        path.append( text );
-        path.append( "\n" );
+        debug exitCodeEnforce!`GENERIC`( active, `Tried to use inactive logger.` );
+        file.writeln( text.data );
     }
+
+    text.clear();
 }
+

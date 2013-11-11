@@ -184,7 +184,6 @@ void app_shutdown () {
 
     db_stop();
     Logger( `shutdown` )( `Goodbye.` );
-    log_stop();
 }
 
 
