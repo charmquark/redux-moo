@@ -17,41 +17,25 @@
 /**
  *  
  */
-module moo.db.redux_loader;
+module moo.db.property;
 
-import moo.db;
-import moo.db.loader;
-
-
-//==================================================================================================
-package:
+import moo.db.object;
+import moo.types;
 
 
-final class ReduxLoader : Loader {
+enum PropFlags : ubyte {
+    Read   = 0x01, // read perm
+    Write  = 0x02, // write perm
+    Chown  = 0x04, // chown perm
+}
 
 
-    private {
-        ByLineRange source = void;
-    }
+struct Property {
 
 
-    /**
-     *
-     */
-    this ( ref File file ) {
-        source = file.byLine();
-    }
+    PropFlags   flags   ;
+    MObject     owner   ;
+    Value       value   ;
 
 
-    /**
-     *
-     */
-    void load () {
-    }
-
-
-    //============================================================================================
-    private:
-
-
-} // end ReduxLoader
+} // end Property

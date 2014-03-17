@@ -61,14 +61,18 @@ body {
     catch ( Exception x ) {
         import std.stdio : stderr;
 
-        debug   { stderr.writeln( x.toString() );       }
-        else    { stderr.writeln( `ERROR: `, x.msg );   }
-
         if ( auto xx = cast( ExitCodeException ) x ) {
             exitCode = xx.code;
         }
         else {
             exitCode = ExitCode.GENERIC;
+        }
+
+        Throwable curr = x;
+        while ( curr !is null ) {
+            debug   { stderr.writeln( curr.toString() );       }
+            else    { stderr.writeln( `ERROR: `, curr.msg );   }
+            curr = curr.next;
         }
 
         if ( options.help ) {

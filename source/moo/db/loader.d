@@ -26,15 +26,16 @@ import moo.db.lambda_loader;
 import moo.db.redux_loader;
 
 
+package {
+    enum LAMBDA_METALINE    = `** LambdaMOO Database`;  /// partial first line of a lambda database
+    enum REDUX_METALINE     = `[redux db]`;             /// partial first line of a redux database
+
+    alias ByLineRange = typeof( File(``).byLine() );
+}
+
+
 //==================================================================================================
 package:
-
-
-enum LAMBDA_METALINE    = `** LambdaMOO Database`;  /// partial first line of a lambda database
-enum REDUX_METALINE     = `[redux db]`;             /// partial first line of a redux database
-
-
-alias ByLineRange = typeof( File(``).byLine() );
 
 
 /**
@@ -67,14 +68,20 @@ body {
     import moo.exception;
 
     auto metaline = file.readln().strip();
+    Loader loader = null;
     if ( metaline.startsWith( REDUX_METALINE ) ) {
-        return new ReduxLoader( file );
+        loader = new ReduxLoader( file );
     }
     else if ( metaline.startsWith( LAMBDA_METALINE ) ) {
-        return new LambdaLoader( file );
+        loader = new LambdaLoader( file );
     }
-    throw new ExitCodeException(
-        ExitCode.INVALID_DB,
-        `Do not recognize database metaline: ` ~ metaline
-    );
+
+    if ( loader is null )
+        throw new ExitCodeException(
+            ExitCode.INVALID_DB,
+            `Do not recognize database metaline: ` ~ metaline
+        );
+
+    file.rewind();
+    return loader;
 }

@@ -22,6 +22,36 @@ module moo.db.db;
 import moo.log;
 import moo.db.object;
 import moo.db.loader;
+import moo.db.verb;
+
+
+private {
+    bool        active  = false ;   ///
+    Logger      log             ;   /// Logger interface.
+    MObject[]   world           ;   ///
+}
+
+
+/**
+ *
+ */
+@safe
+MObject db_select ( long oid ) {
+    if ( oid >= 0 && oid < world.length )
+        return world[ oid ];
+    else
+        return null;
+}
+
+
+/**
+ *
+ */
+@safe
+Verb db_select_verb ( long oid, size_t vid ) {
+    auto o = db_select( oid );
+    return ( o !is null ) ? o.verb( vid ) : null;
+}
 
 
 /**
@@ -30,8 +60,8 @@ import moo.db.loader;
  *  Params:
  *      path = file path to the database
  *
- *  Throws: ExitCodeException if called on an active database, or if the database fails to load and
- *      validate.
+ *  Throws: ExitCodeException if called on an active database, or if the database fails to load
+ *      properly or to validate.
  */
 void db_start ( string path ) {
     import moo.exception;
@@ -66,6 +96,7 @@ package:
  *      requestedSize     = requested minimum size
  *      shouldInstantiate = whether to create object to fill any new slots created (default true)
  */
+/*@safe nothrow*/
 void db_reserve (
     size_t requestedSize, 
     bool shouldInstantiate = true
@@ -76,25 +107,31 @@ in {
 }
 
 body {
-    if ( world.length < requestedSize ) {
+    auto oldLength = world.length;
+    if ( oldLength < requestedSize ) {
         log.verbose( `Reserving %s slots.`, requestedSize );
-        auto oldLength = world.length;
         world.length = requestedSize;
         if ( shouldInstantiate ) {
-            foreach ( index, ref elem ; world[ oldLength .. $ ] )
-                elem = new MObject( index );
+            foreach ( oid, ref elem ; world[ oldLength .. $ ] )
+                elem = new MObject( oid );
         }
+    }
+}
+
+
+/**
+ *
+ */
+void db_unsafeRecycle ( long oid ) {
+    if ( oid > 0 && oid < world.length ) {
+        world[ oid ].destroy();
+        delete world[ oid ];
     }
 }
 
 
 //==================================================================================================
 private:
-
-
-bool        active  = false ;   ///
-Logger      log             ;   /// Logger interface.
-MObject[]   world           ;   ///
 
 
 /**
@@ -115,15 +152,12 @@ void db_load ( string path ) {
     log.verbose( `Loading database from %s`, path );
     auto file = File( path, `r` );
 
-    Loader loader;
-    scope( exit ) if ( loader !is null ) destroy( loader );
-    try {
-        loader = db_selectLoader( file );
-        loader.load();
-    }
-    catch ( Exception x ) {
-        throw new ExitCodeException( ExitCode.UNKNOWN, `Database loader failed.`, x );
-    }
+    try
+        db_selectLoader( file ).load();
+    catch ( ExitCodeException xcx )
+        throw xcx;
+    catch ( Exception x )
+        throw new ExitCodeException( ExitCode.GENERIC, `Database loader failed.`, x );
 }
 
 

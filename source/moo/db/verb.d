@@ -17,41 +17,92 @@
 /**
  *  
  */
-module moo.db.redux_loader;
+module moo.db.verb;
 
-import moo.db;
-import moo.db.loader;
-
-
-//==================================================================================================
-package:
+import moo.db.object;
+import moo.patterns.properties;
 
 
-final class ReduxLoader : Loader {
+/**
+ *  
+ */
+enum VerbFlags : ubyte {
+    Read       = 0x01, // read perm
+    Write      = 0x02, // write/compile perm
+    Execute    = 0x04, // execute perm
+    Debug      = 0x08, // debug perm
+
+    DOBJ_MASK  = 0x30, // direct object flags mask
+    DObjNone   = 0x00, // direct object arg 'none'
+    DObjAny    = 0x10, // direct object arg 'any'
+    DObjThis   = 0x20, // direct object arg 'this'
+
+    IOBJ_MASK  = 0xC0, // indirect object flags mask
+    IObjNone   = 0x00, // indirect object arg 'none'
+    IObjAny    = 0x40, // indirect object arg 'any'
+    IObjThis   = 0x80, // indirect object arg 'this'
+}
+
+
+/**
+ *  
+ */
+final class Verb {
 
 
     private {
-        ByLineRange source = void;
-    }
-
-
-    /**
-     *
-     */
-    this ( ref File file ) {
-        source = file.byLine();
-    }
-
-
-    /**
-     *
-     */
-    void load () {
+        VerbFlags   _flags  ;
+        string      _name   ;
+        MObject     _owner  ;
+        long        _prep   ;
+        string      _source ;
     }
 
 
     //============================================================================================
-    private:
+    package:
 
 
-} // end ReduxLoader
+    /**
+     *
+     */
+    this ( string nm ) {
+        _name = nm;
+    }
+
+
+    /**
+     *
+     */
+    const pure nothrow @property @safe
+    string name () {
+        return _name;
+    }
+
+
+    /**
+     *
+     */
+    const pure nothrow @property @safe
+    string source () {
+        return _source;
+    }
+
+
+    /**
+     *
+     */
+    pure nothrow @property @safe
+    string source ( string val ) {
+        return _source = val;
+    }
+
+
+    /**
+     *
+     */
+    mixin SimpleSettorGroup!( _flags, _name, _owner, _prep, _source );
+
+
+} // end Verb
+

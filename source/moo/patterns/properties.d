@@ -17,41 +17,20 @@
 /**
  *  
  */
-module moo.db.redux_loader;
-
-import moo.db;
-import moo.db.loader;
+module moo.patterns.properties;
 
 
-//==================================================================================================
-package:
-
-
-final class ReduxLoader : Loader {
-
-
-    private {
-        ByLineRange source = void;
+/**
+ *  
+ */
+mixin template SimpleSettorGroup (Syms...) {
+    static if ( Syms.length > 0 ) {
+        mixin( `
+            pure nothrow @property @safe
+            auto `~Syms[ 0 ].stringof[ 1 .. $ ]~` ( `~typeof( Syms[ 0 ] ).stringof~` val ) {
+                return `~Syms[ 0 ].stringof~` = val;
+            }` );
+        mixin SimpleSettorGroup!( Syms[ 1 .. $ ] );
     }
+}
 
-
-    /**
-     *
-     */
-    this ( ref File file ) {
-        source = file.byLine();
-    }
-
-
-    /**
-     *
-     */
-    void load () {
-    }
-
-
-    //============================================================================================
-    private:
-
-
-} // end ReduxLoader

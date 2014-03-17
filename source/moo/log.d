@@ -129,13 +129,12 @@ struct Logger
 
 
 /**
- *  Start the logger system.
+ *  Start the logger system.  May be called again to change the log file or to enable/disable
+ *  verbosity.
  *
  *  Params:
- *      path    = log file path
- *      verbose = verbosity flag
- *
- *  Throws: ExitCodeException if started twice.
+ *      logPath         = log file path
+ *      verbosityFlag   = verbosity flag
  */
 void log_start ( string logPath, bool verbosityFlag )
 
@@ -148,11 +147,8 @@ body {
     import moo.exception;
 
     synchronized ( mutex ) {
-        debug {
-            exitCodeEnforce!`GENERIC`( !active, `Tried to start logger twice.` );
-            active = true;
-        }
-        file = File( logPath, `a` );
+        debug active = true;
+        file.open( logPath, `a` );
         verbosity = verbosityFlag;
     }
 }
