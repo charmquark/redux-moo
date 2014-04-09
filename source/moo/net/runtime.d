@@ -23,6 +23,14 @@ module moo.net.runtime;
 /**
  *
  */
+void run ()
+{
+}
+
+
+/**
+ *
+ */
 void start ()
 {
 }

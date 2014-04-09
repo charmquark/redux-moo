@@ -84,9 +84,3 @@ static this ()
     seed = uniform!MHash();
 }
 
-
-/**
- *
- */
-dstring normalize ()
-

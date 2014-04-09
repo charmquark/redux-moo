@@ -19,12 +19,24 @@
  */
 module moo.db.runtime;
 
+import config   = moo.config    ;
+import log      = moo.log       ;
+
+
+/**
+ *
+ */
+void run ()
+{
+}
+
 
 /**
  *
  */
 void start ()
 {
+    log.info( `db`, `Starting.` );
 }
 
 
@@ -33,5 +45,6 @@ void start ()
  */
 void stop ()
 {
+    log.info( `db`, `Stopping.` );
 }
 

@@ -120,7 +120,7 @@ void checkUncaughtException ( Exception x )
     import moo.exception;
 
     if ( auto xcx = cast( ExitCodeException ) x ) {
-        exitCode = xcx.exitCode;
+        exitCode = xcx.code;
     }
 }
 

@@ -165,12 +165,12 @@ struct Value
         y = val;
     }
 
-    ///ditto
+    /+///ditto
     this ( MObject val ) pure
     {
         type = Type.ObjRef;
         o = val;
-    }
+    }+/
 
 
 } // end Value
@@ -198,7 +198,7 @@ class Symbol
     static Symbol opIndex ( dstring str )
     {
         str = normalize( str );
-        auto h = hash( str );
+        auto h = moo.hash.hash( str );
         return registry.get( h, new Symbol( str, h ) );
     }
 
@@ -226,9 +226,11 @@ class Symbol
     /**
      *
      */
-    @safe override string toString () pure nothrow
+    @safe override string toString () pure
     {
-        return str_;
+        import std.conv;
+
+        return to!string( str_ );
     }
 
 
@@ -251,17 +253,17 @@ class Symbol
     /**
      *
      */
-    string str_;
+    dstring str_;
 
 
     /**
      *
      */
-    @safe this ( string str, MHash h ) nothrow
+    this ( dstring str, MHash h )
     {
         str_ = str;
         hash_ = h;
-        registry[ str ] = this;
+        registry[ h ] = this;
     }
 
 

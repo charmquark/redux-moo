@@ -12,5 +12,6 @@
     "targetPath": "bin",
     "buildRequirements": [
         "disallowDeprecations"
-    ]
+    ],
+    "mainSourceFile": "moo/app.d"
 }

@@ -23,6 +23,14 @@ module moo.vm.runtime;
 /**
  *
  */
+void run ()
+{
+}
+
+
+/**
+ *
+ */
 void start ()
 {
 }

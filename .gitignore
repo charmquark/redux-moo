@@ -1,4 +1,4 @@
 .dub
 bin
 tmp
-moo.log
+*.log

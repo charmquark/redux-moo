@@ -46,7 +46,7 @@ body {
 
         try {
             log.start();
-            log.info( `startup`, `Starting ReduxMOO %s`, APP_VERSION );
+            log.info( null, `Starting ReduxMOO %s`, config.APP_VERSION );
 
             db.start();
             vm.start();
@@ -67,7 +67,7 @@ body {
             vm.stop();
             db.stop();
 
-            log.info( `shutdown`, `Goodbye.` );
+            log.info( null, `Goodbye.` );
             log.stop();
         }
     }

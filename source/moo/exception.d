@@ -19,14 +19,14 @@
  */
 module moo.exception;
 
+import moo.config : ExitCode;
+
 
 /**
  *  An exception class that carries an exit code.
  */
 class ExitCodeException : Exception
 {
-    import moo.config : ExitCode;
-
     /**
      *
      */
@@ -43,7 +43,7 @@ class ExitCodeException : Exception
      *      line    = (normally left defaulted) the line where the exception occurred
      *      next    = an exception to be considered the 'cause' of this one, or otherwise related
      */
-    @safe this pure nothrow
+    @safe this
     (
         ExitCode    code    ,
         string      msg     ,
@@ -51,6 +51,7 @@ class ExitCodeException : Exception
         size_t      line    = __LINE__,
         Throwable   next    = null
     )
+    pure nothrow
     {
         super( msg, file, line, next );
         this.code = code;
@@ -58,14 +59,16 @@ class ExitCodeException : Exception
 
 
     ///ditto
-    @safe this pure nothrow
+    @safe this
     (
         ExitCode    code    ,
         string      msg     ,
         Throwable   next    ,
         string      file    = __FILE__,
         size_t      line    = __LINE__
-    ) {
+    )
+    pure nothrow
+    {
         this( code, msg, file, line, next );
     }
 
@@ -82,7 +85,7 @@ template enforceEx ( E )
     static import std.exception;
 
     static if ( is( E : ExitCodeException ) ) {
-        @safe T enforceEx pure ( T )
+        @safe T enforceEx ( T )
         (
             T           value   ,
             ExitCode    code    ,
@@ -90,6 +93,7 @@ template enforceEx ( E )
             string      file    = __FILE__,
             size_t      line    = __LINE__
         )
+        pure
         {
             if ( !value )
                 throw new E( code, msg(), file, line );
@@ -123,13 +127,14 @@ template exitCodeEnforce ( string CodeName )
 ///ditto
 template exitCodeEnforce ( ExitCode Code )
 {
-    @safe T exitCodeEnforce pure ( T )
+    @safe T exitCodeEnforce ( T )
     (
         T           value   ,
         lazy string msg     = ``,
         string      file    = __FILE__,
         size_t      line    = __LINE__
     )
+    pure
     {
         return enforceEx!ExitCodeException( value, Code, msg, file, line );
     }
