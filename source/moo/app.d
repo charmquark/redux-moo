@@ -52,6 +52,11 @@ body {
             vm.start();
             net.start();
 
+            version( Posix )
+            {
+                registerSignalHandlers();
+            }
+
             while ( config.shouldContinue ) {
                 net.run();
                 vm.run();
@@ -72,5 +77,26 @@ body {
         }
     }
     return config.exitCode;
+}
+
+
+/**
+ *
+ */
+version( Posix )
+{
+    extern( C ) @system void handle_signal ( int signo ) nothrow
+    {
+        import config = moo.config;
+
+        config.shouldContinue = false;
+    }
+
+    @system void registerSignalHandlers () nothrow {
+        import core.stdc.signal;
+
+        signal( SIGTERM, &handle_signal );
+        signal( SIGINT, &handle_signal );
+    }
 }
 

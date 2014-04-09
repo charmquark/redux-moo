@@ -62,10 +62,12 @@ void info ( Args... ) ( string label, string msg, Args args )
  */
 void start ()
 {
+    import core.stdc.stdio : _IOLBF;
     import config = moo.config;
 
     assert( !file.isOpen );
     file.open( config.logPath, `a` );
+    file.setvbuf( 1024_u, _IOLBF );
 }
 
 
