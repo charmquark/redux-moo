@@ -66,7 +66,7 @@ void start ()
     import config = moo.config;
 
     assert( !file.isOpen );
-    file.open( config.logPath, `a` );
+    file.open( config.logPath, `w` );
     file.setvbuf( 1024_u, _IOLBF );
 }
 
