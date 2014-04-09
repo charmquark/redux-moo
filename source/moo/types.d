@@ -1,6 +1,6 @@
 /*//////////////////////////////////////////////////////////////////////////////////////////////////
 ////                                                                                            ////
-////    Copyright 2013 Christopher Nicholson-Sauls                                              ////
+////    Copyright 2014 Christopher Nicholson-Sauls                                              ////
 ////                                                                                            ////
 ////    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this    ////
 ////    file except in compliance with the License.  You may obtain a copy of the License at    ////
@@ -34,7 +34,8 @@ alias MStr      = string    ;
 /**
  * 
  */
-enum MError : MInt {
+enum MError : MInt
+{
     None,
     Type,
     Div,
@@ -57,7 +58,8 @@ enum MError : MInt {
 /**
  * 
  */
-enum Type : MInt {
+enum Type : MInt
+{
     Int,
     Obj,
     Str,
@@ -68,35 +70,38 @@ enum Type : MInt {
     Catch,
     Finally,
     Float,
-    Symbol,
-    ObjRef
+    Symbol/+,
+    ObjRef+/
 }
 
 
 /**
  * 
  */
-struct Value {
+struct Value
+{
 
 
     Type type = Type.None;
 
 
-    union {
+    union
+    {
         MInt    i; // int, obj
         MStr    s; // str
         MError  e; // err
         MList   l; // list
         MFloat  f; // float
         Symbol  y; // symbol
-        MObject o; // objref
+        //MObject o; // objref
     }
 
 
     /**
      *
      */
-    static Value clear () {
+    static Value clear () pure
+    {
         Value result;
         result.type = Type.Clear;
         result.i = 0;
@@ -107,7 +112,8 @@ struct Value {
     /**
      *
      */
-    static Value obj ( MInt val ) {
+    static Value obj ( MInt val ) pure
+    {
         Value result;
         result.type = Type.Obj;
         result.i = val;
@@ -118,43 +124,50 @@ struct Value {
     /**
      *
      */
-    this ( MInt val ) {
+    this ( MInt val ) pure
+    {
         type = Type.Int;
         i = val;
     }
 
     ///ditto
-    this ( MStr val ) {
+    this ( MStr val ) pure
+    {
         type = Type.Str;
         s = val;
     }
 
     ///ditto
-    this ( MError val ) {
+    this ( MError val ) pure
+    {
         type = Type.Err;
         e = val;
     }
 
     ///ditto
-    this ( const( MList ) val ) {
+    this ( const( MList ) val ) pure
+    {
         type = Type.List;
         l = val.dup;
     }
 
     ///ditto
-    this ( MFloat val ) {
+    this ( MFloat val ) pure
+    {
         type = Type.Float;
         f = val;
     }
 
     ///ditto
-    this ( Symbol val ) {
+    this ( Symbol val ) pure
+    {
         type = Type.Symbol;
         y = val;
     }
 
     ///ditto
-    this ( MObject val ) {
+    this ( MObject val ) pure
+    {
         type = Type.ObjRef;
         o = val;
     }
@@ -166,30 +179,56 @@ struct Value {
 /**
  * 
  */
-class Symbol {
+class Symbol
+{
+    import moo.hash;
 
 
-    private {
-        static Symbol[ string ]   registry;
+    /**
+     *
+     */
+    static Symbol opIndex ( string str )
+    {
+        import std.conv;
 
-        string _str;
+        return opIndex( to!dstring( str ) );
+    }
+
+    ///ditto
+    static Symbol opIndex ( dstring str )
+    {
+        str = normalize( str );
+        auto h = hash( str );
+        return registry.get( h, new Symbol( str, h ) );
     }
 
 
     /**
      *
      */
-    static Symbol opIndex ( string str ) {
-        return registry.get( str, new Symbol( str ) );
+    static dstring normalize ( dstring str )
+    {
+        static import std.uni;
+
+        return std.uni.normalize!( std.uni.NFKC )( str );
     }
 
 
     /**
      *
      */
-    override pure nothrow @safe
-    string toString () {
-        return _str;
+    @property MHash hash () pure nothrow
+    {
+        return hash_;
+    }
+
+
+    /**
+     *
+     */
+    @safe override string toString () pure nothrow
+    {
+        return str_;
     }
 
 
@@ -200,9 +239,28 @@ class Symbol {
     /**
      *
      */
-    nothrow @safe
-    this ( string str ) {
-        _str = str;
+    static Symbol[ MHash ] registry;
+
+
+    /**
+     *
+     */
+    MHash hash_;
+
+
+    /**
+     *
+     */
+    string str_;
+
+
+    /**
+     *
+     */
+    @safe this ( string str, MHash h ) nothrow
+    {
+        str_ = str;
+        hash_ = h;
         registry[ str ] = this;
     }
 

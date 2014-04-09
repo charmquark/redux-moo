@@ -15,67 +15,52 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *  The logger interface.
+ *
  */
-module moo.log;
-
-import std.stdio : File;
+module moo.hash;
 
 
 /**
  *
  */
-immutable SEPARATOR = ` -- `;
+alias MHash = uint;
 
 
 /**
- *
+ *  based on MurmurHash3
+ *  TODO: write a separate 64bit version
  */
-void error ( Args... ) ( string label, string msg, Args args )
+MHash hash ( dstring str )
 {
-    write( `ERROR`, label, msg, args );
-}
+    static immutable uint
+        c1  = 0xcc9e2d51    ,
+        c2  = 0x1b873593    ,
+        r1  = 15            ,
+        r1a = 32 - r1       ,
+        r2  = 13            ,
+        r2a = 32 - r2       ,
+        m   = 5             ,
+        n   = 0xe6546b64    ;
 
-///ditto
-void error () ( string label, Exception x )
-{
-    write( `ERROR`, label, x.toString() );
-    auto cause = x.next;
-    while ( cause !is null ) {
-        writePlain( cause.toString() );
-        cause = cause.next;
+    uint result = seed;
+    uint k;
+
+    foreach ( dchar dc ; str ) {
+        k = cast( uint ) dc;
+        k *= c1;
+        k = (k << r1) | (k >> r1a);
+        k *= c2;
+        result ^= k;
+        result = ((result << r2) | (result >> r2a) * m) + n;
     }
-}
 
-
-/**
- *
- */
-void info ( Args... ) ( string label, string msg, Args args )
-{
-    write( `info`, label, msg, args );
-}
-
-
-/**
- * Start the logger system.
- */
-void start ()
-{
-    import config = moo.config;
-
-    assert( !file.isOpen );
-    file.open( config.logPath, `a` );
-}
-
-
-/**
- *
- */
-void stop ()
-{
-    assert( file.isOpen );
-    file.close();
+    result ^= str.length;
+    result ^= (result >> 16);
+    result *= 0x85ebca6b;
+    result ^= (result >> 13);
+    result *= 0xc2b2ae35;
+    result ^= (result >> 16);
+    return result;
 }
 
 
@@ -86,52 +71,22 @@ private:
 /**
  *
  */
-File file;
+MHash seed = 0;
 
 
 /**
  *
  */
-void write ( Args... ) ( string prefix, string label, string msg, Args args )
+static this ()
 {
-    import std.array : appender;
-    import std.datetime : Clock;
-    import std.string : sformat;
+    import std.random : uniform;
 
-    static text = appender!string();
-    static char[ 1024 ] buffer;
-
-    if ( file.isOpen ) {
-        text.put( Clock.currTime().toSimpleString() );
-        text.put( SEPARATOR );
-        text.put( prefix );
-        text.put( SEPARATOR );
-        if ( label != null ) {
-            text.put( label );
-            text.put( SEPARATOR );
-        }
-
-        static if ( Args.length == 0 ) {
-            text.put( msg );
-        }
-        else {
-            text.put( sformat( buffer, msg, args ) );
-        }
-
-        file.writeln( text.data );
-        text.clear();
-    }
+    seed = uniform!MHash();
 }
 
 
 /**
  *
  */
-void writePlain ( string msg )
-{
-    if ( file.isOpen ) {
-        file.write( SEPARATOR );
-        file.writeln( msg );
-    }
-}
+dstring normalize ()
 
