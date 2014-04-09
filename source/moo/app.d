@@ -26,7 +26,7 @@ module moo.app;
  *  Params:
  *      args = command line arguments
  *
- *  Returns: program exit code; 0 meaning success, >0 meaning error.  See module moo.exception for
+ *  Returns: program exit code; 0 meaning success, >0 meaning error.  See module moo.config for
  *      details.
  */
 int main ( string[] args )
