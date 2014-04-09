@@ -146,7 +146,7 @@ void parseArgs ( string[] args )
             "    -?  --help         Show this help text.\n"
             "    -f  --file=PATH    Set path to database. (default: %s) (current: %s)\n"
             "    -l  --log=PATH     Set path to log. If omitted, derived from db path. (current: %s)\n"
-            "    -p  --port=NUM     System listener port. (default: %s) (current: %s)\n"
+            "    -p  --port=NUM     System listener port. (default: %s) (current: %s)\n",
             args[ 0 ],
             DEFAULT_DB_PATH, dbPath,
             logPath,

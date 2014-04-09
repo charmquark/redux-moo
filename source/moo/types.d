@@ -19,7 +19,7 @@
  */
 module moo.types;
 
-import moo.db.object;
+//import moo.db.object;
 
 
 /**
@@ -28,7 +28,7 @@ import moo.db.object;
 alias MFloat    = double    ;
 alias MInt      = long      ;
 alias MList     = Value[]   ;
-alias MStr      = dstring   ;
+alias MString   = dstring   ;
 
 
 /**
@@ -62,7 +62,7 @@ enum Type : MInt
 {
     Int,
     Obj,
-    Str,
+    String,
     Err,
     List,
     Clear,
@@ -88,11 +88,11 @@ struct Value
     union
     {
         MInt    i; // int, obj
-        MStr    s; // str
+        MString s; // string
         MError  e; // err
         MList   l; // list
         MFloat  f; // float
-        Symbol  y; // symbol
+        MSymbol y; // symbol
         //MObject o; // objref
     }
 
@@ -100,7 +100,7 @@ struct Value
     /**
      *
      */
-    static Value clear () pure
+    static Value clear ()
     {
         Value result;
         result.type = Type.Clear;
@@ -112,7 +112,7 @@ struct Value
     /**
      *
      */
-    static Value obj ( MInt val ) pure
+    static Value obj ( MInt val )
     {
         Value result;
         result.type = Type.Obj;
@@ -131,9 +131,9 @@ struct Value
     }
 
     ///ditto
-    this ( MStr val ) pure
+    this ( MString val ) pure
     {
-        type = Type.Str;
+        type = Type.String;
         s = val;
     }
 
@@ -159,7 +159,7 @@ struct Value
     }
 
     ///ditto
-    this ( Symbol val ) pure
+    this ( MSymbol val )
     {
         type = Type.Symbol;
         y = val;
@@ -179,93 +179,181 @@ struct Value
 /**
  * 
  */
-class Symbol
+struct MSymbol
 {
-    import moo.hash;
+    static import moo.hash;
 
 
     /**
      *
      */
-    static Symbol opIndex ( string str )
-    {
-        import std.conv;
+    alias MHash = moo.hash.MHash;
 
-        return opIndex( to!dstring( str ) );
-    }
 
-    ///ditto
-    static Symbol opIndex ( dstring str )
+    /**
+     *
+     */
+    static MSymbol opIndex ( MString str )
     {
         str = normalize( str );
         auto h = moo.hash.hash( str );
-        return registry.get( h, new Symbol( str, h ) );
+        auto sym = registry.get( h, createEntry( str, h ) );
+        return MSymbol( sym );
     }
 
 
     /**
      *
      */
-    static dstring normalize ( dstring str )
+    this ( this )
     {
-        static import std.uni;
-
-        return std.uni.normalize!( std.uni.NFKC )( str );
+        ++entry.refs;
     }
 
 
     /**
      *
      */
-    @property MHash hash () pure nothrow
+    ~this ()
     {
-        return hash_;
+        --entry.refs;
+        if ( entry.refs == 0 ) {
+            destroyEntry( entry );
+        }
     }
 
 
     /**
      *
      */
-    @safe override string toString () pure
+    @safe @property MHash hash () const
     {
-        import std.conv;
-
-        return to!string( str_ );
+        return entry.hash;
     }
 
 
-    //==========================================================================================
+    /**
+     *
+     */
+    @safe @property MString text () const
+    {
+        return entry.text;
+    }
+
+
+    /**
+     *
+     */
+    int opCmp ( ref const( MSymbol ) other ) const
+    {
+        return (
+            entry.hash < other.entry.hash
+            ? -1
+            : (
+                entry.hash > other.entry.hash
+                ? 1
+                : 0
+            )
+        );
+    }
+
+
+    /**
+     *
+     */
+    bool opEquals ( ) ( auto ref const( MSymbol ) other ) const
+    {
+        return entry == other.entry;
+    }
+
+
+    //------------------------------------------------------------------------------------------
     private:
 
 
     /**
      *
      */
-    static Symbol[ MHash ] registry;
+    static Entry*[ MHash ] registry;
 
 
     /**
      *
      */
-    MHash hash_;
-
-
-    /**
-     *
-     */
-    dstring str_;
-
-
-    /**
-     *
-     */
-    this ( dstring str, MHash h )
-    {
-        str_ = str;
-        hash_ = h;
-        registry[ h ] = this;
+    static Entry* createEntry ( MString str, MHash h )
+    out ( result ) {
+        assert( result != null );
+    }
+    body {
+        auto e = new Entry( str, h, 0 );
+        registry[ h ] = e;
+        return e;
     }
 
 
-} // end Symbol
+    /**
+     *
+     */
+    static void destroyEntry ( Entry* e )
+    in {
+        assert( e != null );
+    }
+    body {
+        registry.remove( e.hash );
+        e.destroy();
+    }
+
+
+    /**
+     *
+     */
+    static struct Entry
+    {
+        /**
+         *
+         */
+        MString text;
+
+
+        /**
+         *
+         */
+        MHash hash;
+
+
+        /**
+         *
+         */
+        size_t refs = 0;
+    }
+
+
+    /**
+     *
+     */
+    this ( Entry* e )
+    {
+        entry = e;
+        ++entry.refs;
+    }
+
+
+    /**
+     *
+     */
+    Entry* entry;
+
+
+} // end MSymbol
+
+
+/*
+ *
+ */
+MString normalize ( MString str )
+{
+    static import std.uni;
+
+    return std.uni.normalize!( std.uni.NFKC )( str );
+}
 
