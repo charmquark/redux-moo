@@ -106,15 +106,6 @@ bool shouldContinue = true;
 /**
  *
  */
-@safe @property bool verbose () nothrow
-{
-    return verbose_;
-}
-
-
-/**
- *
- */
 void checkUncaughtException ( Exception x )
 {
     import moo.exception;
@@ -142,8 +133,7 @@ void parseArgs ( string[] args )
         `help|?`    , &helpWanted   ,
         `file|f`    , &dbPath_      ,
         `log|l`     , &logPath_     ,
-        `port|p`    , &port_        ,
-        `verbose|v` , &verbose_
+        `port|p`    , &port_
     );
     if ( logPath_ == null ) {
         logPath_ = dbPath_.setExtension( `log` );
@@ -157,7 +147,6 @@ void parseArgs ( string[] args )
             "    -f  --file=PATH    Set path to database. (default: %s) (current: %s)\n"
             "    -l  --log=PATH     Set path to log. If omitted, derived from db path. (current: %s)\n"
             "    -p  --port=NUM     System listener port. (default: %s) (current: %s)\n"
-            "    -v  --verbose      Verbose program output; rarely useful.\n",
             args[ 0 ],
             DEFAULT_DB_PATH, dbPath,
             logPath,
@@ -199,10 +188,4 @@ ushort port_ = DEFAULT_PORT;
  *
  */
 bool shouldStart_ = false;
-
-
-/**
- *
- */
-bool verbose_ = false;
 
