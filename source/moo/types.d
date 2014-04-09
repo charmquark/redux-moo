@@ -100,7 +100,7 @@ struct Value
     /**
      *
      */
-    static Value clear ()
+    static @safe Value clear () nothrow
     {
         Value result;
         result.type = Type.Clear;
@@ -112,7 +112,7 @@ struct Value
     /**
      *
      */
-    static Value obj ( MInt val )
+    static @safe Value obj ( MInt val ) nothrow
     {
         Value result;
         result.type = Type.Obj;
@@ -124,42 +124,42 @@ struct Value
     /**
      *
      */
-    this ( MInt val ) pure
+    @safe this ( MInt val ) pure nothrow
     {
         type = Type.Int;
         i = val;
     }
 
     ///ditto
-    this ( MString val ) pure
+    @safe this ( MString val ) pure nothrow
     {
         type = Type.String;
         s = val;
     }
 
     ///ditto
-    this ( MError val ) pure
+    @safe this ( MError val ) pure nothrow
     {
         type = Type.Err;
         e = val;
     }
 
     ///ditto
-    this ( const( MList ) val ) pure
+    @safe this ( const( MList ) val ) pure
     {
         type = Type.List;
         l = val.dup;
     }
 
     ///ditto
-    this ( MFloat val ) pure
+    @safe this ( MFloat val ) pure nothrow
     {
         type = Type.Float;
         f = val;
     }
 
     ///ditto
-    this ( MSymbol val )
+    @safe this ( MSymbol val ) nothrow
     {
         type = Type.Symbol;
         y = val;
@@ -171,6 +171,20 @@ struct Value
         type = Type.ObjRef;
         o = val;
     }+/
+
+
+    /**
+     *
+     */
+    @safe ~this () pure nothrow
+    {}
+
+
+    /**
+     *
+     */
+    @safe this ( const this ) nothrow
+    {}
 
 
 } // end Value
@@ -193,7 +207,7 @@ struct MSymbol
     /**
      *
      */
-    static MSymbol opIndex ( MString str )
+    static @trusted MSymbol opIndex ( MString str )
     {
         str = normalize( str );
         auto h = moo.hash.hash( str );
@@ -205,7 +219,7 @@ struct MSymbol
     /**
      *
      */
-    this ( this )
+    @safe this ( this ) pure nothrow
     {
         ++entry.refs;
     }
@@ -214,7 +228,7 @@ struct MSymbol
     /**
      *
      */
-    ~this ()
+    @safe ~this () nothrow
     {
         --entry.refs;
         if ( entry.refs == 0 ) {
@@ -235,7 +249,7 @@ struct MSymbol
     /**
      *
      */
-    @safe @property MString text () const
+    @safe @property MString text () const pure nothrow
     {
         return entry.text;
     }
@@ -244,7 +258,7 @@ struct MSymbol
     /**
      *
      */
-    int opCmp ( ref const( MSymbol ) other ) const
+    @safe int opCmp ( ref const( MSymbol ) other ) const pure nothrow
     {
         return (
             entry.hash < other.entry.hash
@@ -261,7 +275,7 @@ struct MSymbol
     /**
      *
      */
-    bool opEquals ( ) ( auto ref const( MSymbol ) other ) const
+    @safe bool opEquals ( ) ( auto ref const( MSymbol ) other ) const pure nothrow
     {
         return entry == other.entry;
     }
@@ -280,7 +294,7 @@ struct MSymbol
     /**
      *
      */
-    static Entry* createEntry ( MString str, MHash h )
+    static @safe Entry* createEntry ( MString str, MHash h ) nothrow
     out ( result ) {
         assert( result != null );
     }
@@ -294,7 +308,7 @@ struct MSymbol
     /**
      *
      */
-    static void destroyEntry ( Entry* e )
+    static @safe void destroyEntry ( Entry* e ) nothrow
     in {
         assert( e != null );
     }
@@ -331,7 +345,7 @@ struct MSymbol
     /**
      *
      */
-    this ( Entry* e )
+    @safe this ( Entry* e ) pure nothrow
     {
         entry = e;
         ++entry.refs;
@@ -350,7 +364,7 @@ struct MSymbol
 /*
  *
  */
-MString normalize ( MString str )
+@safe MString normalize ( MString str )
 {
     static import std.uni;
 

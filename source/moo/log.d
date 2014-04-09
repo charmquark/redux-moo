@@ -31,15 +31,15 @@ immutable SEPARATOR = ` -- `;
 /**
  *
  */
-void error ( Args... ) ( string label, string msg, Args args )
+void error ( Args... ) ( string msg, Args args )
 {
-    write( `ERROR`, label, msg, args );
+    write( `ERROR`, msg, args );
 }
 
 ///ditto
-void error () ( string label, Exception x )
+void error () ( Exception x )
 {
-    write( `ERROR`, label, x.toString() );
+    write( `ERROR`, x.toString() );
     auto cause = x.next;
     while ( cause !is null ) {
         writePlain( cause.toString() );
@@ -51,9 +51,9 @@ void error () ( string label, Exception x )
 /**
  *
  */
-void info ( Args... ) ( string label, string msg, Args args )
+void info ( Args... ) ( string msg, Args args )
 {
-    write( `info`, label, msg, args );
+    write( `info`, msg, args );
 }
 
 
@@ -93,7 +93,7 @@ File file;
 /**
  *
  */
-void write ( Args... ) ( string prefix, string label, string msg, Args args )
+void write ( Args... ) ( string prefix, string msg, Args args )
 {
     import std.datetime : Clock;
     import std.format : formattedWrite;
@@ -104,10 +104,6 @@ void write ( Args... ) ( string prefix, string label, string msg, Args args )
         w.put( SEPARATOR );
         w.put( prefix );
         w.put( SEPARATOR );
-        if ( label != null ) {
-            w.put( label );
-            w.put( SEPARATOR );
-        }
         static if ( Args.length == 0 ) {
             w.put( msg );
         }

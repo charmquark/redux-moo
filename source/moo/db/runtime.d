@@ -36,7 +36,7 @@ void run ()
  */
 void start ()
 {
-    log.info( `db`, `Starting.` );
+    log.info( `Starting database system.` );
 }
 
 
@@ -45,6 +45,6 @@ void start ()
  */
 void stop ()
 {
-    log.info( `db`, `Stopping.` );
+    log.info( `Stopping database system.` );
 }
 

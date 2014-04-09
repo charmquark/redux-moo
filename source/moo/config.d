@@ -106,7 +106,7 @@ bool shouldContinue = true;
 /**
  *
  */
-void checkUncaughtException ( Exception x )
+@safe void checkUncaughtException ( Exception x ) nothrow
 {
     import moo.exception;
 

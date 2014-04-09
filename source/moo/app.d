@@ -47,7 +47,7 @@ body {
 
         try {
             log.start();
-            log.info( null, `Starting ReduxMOO %s`, config.APP_VERSION );
+            log.info( `Starting ReduxMOO %s`, config.APP_VERSION );
 
             db.start();
             vm.start();
@@ -63,14 +63,14 @@ body {
         }
         catch ( Exception x ) {
             config.checkUncaughtException( x );
-            log.error( `uncaught`, x );
+            log.error( x );
         }
         finally {
             net.stop();
             vm.stop();
             db.stop();
 
-            log.info( null, `Goodbye.` );
+            log.info( `Goodbye.` );
             log.stop();
         }
     }

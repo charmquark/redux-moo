@@ -30,7 +30,7 @@ alias MHash = uint;
  *  based on MurmurHash3
  *  TODO: write a separate 64bit version
  */
-MHash hash ( dstring str )
+@safe MHash hash ( dstring str ) pure nothrow
 {
     static immutable uint
         c1  = 0xcc9e2d51    ,
@@ -71,7 +71,7 @@ private:
 /**
  *
  */
-MHash seed = 0;
+immutable MHash seed;
 
 
 /**
