@@ -39,13 +39,12 @@ body {
 
     config.parseArgs( args );
     if ( config.shouldStart ) {
-        import log = moo.log;
+        import db   = moo.db    ;
+        import log  = moo.log;
+        import net  = moo.net   ;
+        import vm   = moo.vm    ;
 
         try {
-            import db   = moo.db    ;
-            import net  = moo.net   ;
-            import vm   = moo.vm    ;
-
             log.start();
             log.info( `startup`, `Starting ReduxMOO %s`, APP_VERSION );
 
