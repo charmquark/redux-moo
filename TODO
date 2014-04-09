@@ -1,5 +1,0 @@
-Maybe add command line switch to reserve memory?
-    value of feature?
-    format of switch argument?
-
-In light of the above, do we want to establish a hard coded minimum reserve?
