@@ -17,7 +17,21 @@
 /**
  *  
  */
-module moo.vm;
+module moo.net.runtime;
 
-public import   moo.vm.runtime  ;
+
+/**
+ *
+ */
+void start ()
+{
+}
+
+
+/**
+ *
+ */
+void stop ()
+{
+}
 

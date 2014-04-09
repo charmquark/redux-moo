@@ -17,7 +17,21 @@
 /**
  *  
  */
-module moo.vm;
+module moo.db.runtime;
 
-public import   moo.vm.runtime  ;
+
+/**
+ *
+ */
+void start ()
+{
+}
+
+
+/**
+ *
+ */
+void stop ()
+{
+}
 
