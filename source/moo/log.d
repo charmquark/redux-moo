@@ -94,32 +94,26 @@ File file;
  */
 void write ( Args... ) ( string prefix, string label, string msg, Args args )
 {
-    import std.array : appender;
     import std.datetime : Clock;
-    import std.string : sformat;
-
-    static text = appender!string();
-    static char[ 1024 ] buffer;
+    import std.format : formattedWrite;
 
     if ( file.isOpen ) {
-        text.put( Clock.currTime().toSimpleString() );
-        text.put( SEPARATOR );
-        text.put( prefix );
-        text.put( SEPARATOR );
+        auto w = file.lockingTextWriter();
+        w.put( Clock.currTime().toSimpleString() );
+        w.put( SEPARATOR );
+        w.put( prefix );
+        w.put( SEPARATOR );
         if ( label != null ) {
-            text.put( label );
-            text.put( SEPARATOR );
+            w.put( label );
+            w.put( SEPARATOR );
         }
-
         static if ( Args.length == 0 ) {
-            text.put( msg );
+            w.put( msg );
         }
         else {
-            text.put( sformat( buffer, msg, args ) );
+            formattedWrite( w, msg, args );
         }
-
-        file.writeln( text.data );
-        text.clear();
+        w.put( '\n' );
     }
 }
 
@@ -130,8 +124,7 @@ void write ( Args... ) ( string prefix, string label, string msg, Args args )
 void writePlain ( string msg )
 {
     if ( file.isOpen ) {
-        file.write( SEPARATOR );
-        file.writeln( msg );
+        file.writeln( SEPARATOR, msg );
     }
 }
 
