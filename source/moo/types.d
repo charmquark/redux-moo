@@ -28,7 +28,7 @@ import moo.db.object;
 alias MFloat    = double    ;
 alias MInt      = long      ;
 alias MList     = Value[]   ;
-alias MStr      = string    ;
+alias MStr      = dstring   ;
 
 
 /**
