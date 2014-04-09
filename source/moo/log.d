@@ -74,7 +74,6 @@ void start ()
  */
 void stop ()
 {
-    assert( file.isOpen );
     file.close();
 }
 
