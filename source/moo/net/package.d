@@ -17,9 +17,5 @@
 /**
  *  
  */
-module moo.db;
+module moo.net;
 
-public import   moo.db.db       ,
-                moo.db.object   ,
-                moo.db.property ,
-                moo.db.verb     ;
