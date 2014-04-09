@@ -15,65 +15,37 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *  ReduxMOO is a reimplementation and expansion of the LambdaMOO server.
- */
-module moo.app;
-
-
-/**
- *  Main function.
  *
- *  Params:
- *      args = command line arguments
- *
- *  Returns: program exit code; 0 meaning success, >0 meaning error.  See module moo.config for
- *      details.
  */
-int main ( string[] args )
-in {
-    // there's something seriously wonky if this ever trips...
-    assert( args.length > 0 );
-}
-body {
-    import config = moo.config;
+module moo.native.signal;
 
-    config.parseArgs( args );
-    if ( config.shouldStart ) {
-        import sig  = moo.native.signal ;
-        import db   = moo.db            ;
-        import log  = moo.log           ;
-        import net  = moo.net           ;
-        import vm   = moo.vm            ;
 
-        try {
-            log.start();
-            log.info( null, `Starting ReduxMOO %s`, config.APP_VERSION );
+version( Posix )
+{
+    /**
+    *
+    */
+    @system void registerSignalHandlers () nothrow
+    {
+        import core.stdc.signal;
 
-            db.start();
-            vm.start();
-            net.start();
-
-            sig.registerSignalHandlers();
-
-            while ( config.shouldContinue ) {
-                net.run();
-                vm.run();
-                db.run();
-            }
-        }
-        catch ( Exception x ) {
-            config.checkUncaughtException( x );
-            log.error( `uncaught`, x );
-        }
-        finally {
-            net.stop();
-            vm.stop();
-            db.stop();
-
-            log.info( null, `Goodbye.` );
-            log.stop();
-        }
+        signal( SIGTERM, &quit_on_signal );
+        signal( SIGINT, &quit_on_signal );
     }
-    return config.exitCode;
+
+
+    /**
+     *
+     */
+    private extern( C ) @system void quit_on_signal ( int signo ) nothrow
+    {
+        import config = moo.config;
+
+        config.shouldContinue = false;
+    }
+}
+else
+{
+    static assert( "Sorry to say, your platform is not yet supported." );
 }
 
