@@ -167,6 +167,9 @@ void parseArgs ( string[] args )
     else if ( args.length > 1 ) {
         throw new ExitCodeException( ExitCode.InvalidArg, `Unrecognized argument(s).` );
     }
+    else {
+        shouldStart_ = true;
+    }
 }
 
 
