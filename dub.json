@@ -1,0 +1,16 @@
+{
+    "name": "redux-moo",
+    "description": "ReduxMOO: a reimplementation of LambdaMOO.",
+    "homepage": "https://github.com/csauls/redux-moo",
+    "authors": [
+        "Christopher Nicholson-Sauls"
+    ],
+    "license": "Apache-2.0",
+
+    "targetType": "executable",
+    "targetName": "remoo",
+    "targetPath": "bin",
+    "buildRequirements": [
+        "disallowDeprecations"
+    ]
+}
