@@ -71,6 +71,8 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *  LambdaMOO database format is based around some assumptions about ordering, and those
      *  assumptions do not hold under ReduxMOO.
      *
+     *  See_Also: loadProperties
+     *
      *  Params:
      *      objectCount = number of objects to seek properties for; we use this rather than relying
      *          on the cache keys because, contrary to popular belief, MOO does not actually dictate
@@ -107,7 +109,7 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
-     *
+     *  Run the loading procedure. Pure madness.
      */
     @safe void load ()
     {
@@ -141,7 +143,7 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
-     *
+     *  Load an object, if it is valid (ie, not recycled).
      */
     @trusted void loadObject ()
     {
@@ -174,7 +176,8 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
-     *
+     *  Read and convert a set of object flags. LambdaMOO used bitvectors, but ReduxMOO uses plain
+     *  booleans.
      */
     @safe void loadObjectFlags ( MObject* obj )
     {
@@ -198,7 +201,9 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
+     *  Load a verb program.
      *
+     *  Throws: an ExitCodeException if the verb cannot be found.
      */
     @trusted void loadProgram ()
     {
@@ -228,7 +233,13 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
+     *  Load and cache the properties of an object. We do this silliness because LambdaMOO and
+     *  ReduxMOO handle properties differently.
      *
+     *  See_Also: applyProperties
+     *
+     *  Params:
+     *      oid = object #id whose properties we are reading
      */
     @safe void loadProperties ( MInt oid )
     {
@@ -257,7 +268,9 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
+     *  Load a verb. As this is a LambdaMOO database, this does not include the verb's program.
      *
+     *  Returns: the verb (duh).
      */
     @safe MVerb loadVerb ()
     {
@@ -294,7 +307,11 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
+     *  Read the next line from the source file.
      *
+     *  Returns: a const view of the source line.
+     *
+     *  Throws: an ExitCodeException if the source is empty.
      */
     @trusted const( char )[] nextLine ()
     {
@@ -308,7 +325,9 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
+     *  Read a value of type T from the source.
      *
+     *  Returns: the read and converted value.
      */
     @safe T read ( T ) ()
     {
@@ -316,17 +335,16 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
     }
 
 
-    /**
-     *
-     */
-    alias readFlags     = read!ubyte    ;
-    alias readInt       = read!MInt     ;
-    alias readSize      = read!size_t   ;
-    alias readString    = read!MString  ;
+    alias readFlags     = read!ubyte    ; /// convenience alias for read!T
+    alias readInt       = read!MInt     ; /// ditto
+    alias readSize      = read!size_t   ; /// ditto
+    alias readString    = read!MString  ; /// ditto
 
 
     /**
+     *  Reads an object #id from the source, and selects that object.
      *
+     *  Returns: a pointer to the selected object.
      */
     @safe MObject* readObjRef ()
     {
@@ -335,7 +353,11 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
 
     /**
+     *  Reads a MOO value from the database.
      *
+     *  Returns: the value (c'mon, really).
+     *
+     *  Throws: an ExitCodeException if the value's type is malformed/unrecognized.
      */
     @safe MValue readValue ()
     {
@@ -366,7 +388,7 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
             case Finally    : goto case;
             case Symbol     :
             //default         :
-                throw new ExitCodeException( ExitCode.InvalidDb, `Malformed property value` );
+                throw new ExitCodeException( ExitCode.InvalidDb, `Malformed property value type` );
         }
         return result;
     }
