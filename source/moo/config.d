@@ -31,7 +31,7 @@ immutable APP_VERSION = `0.3.0-alpha`;
 /**
  *  Default path to look for the database.
  */
-immutable DEFAULT_DB_PATH = `remoo.db`;
+immutable DEFAULT_DB_PATH = `remoo.rdb`;
 
 
 /**
@@ -73,6 +73,15 @@ bool shouldContinue = true;
 @safe @property string dbPath () nothrow
 {
     return dbPath_;
+}
+
+
+/**
+ *
+ */
+@safe @property bool lambda () nothrow
+{
+    return lambda_;
 }
 
 
@@ -133,6 +142,7 @@ void parseArgs ( string[] args )
         `help|?`    , &helpWanted   ,
         `file|f`    , &dbPath_      ,
         `log|l`     , &logPath_     ,
+        `lambda|L`  , &lambda_      ,
         `port|p`    , &port_
     );
     if ( logPath_ == null ) {
@@ -146,6 +156,7 @@ void parseArgs ( string[] args )
             "    -?  --help         Show this help text.\n"
             "    -f  --file=PATH    Set path to database. (default: %s) (current: %s)\n"
             "    -l  --log=PATH     Set path to log. If omitted, derived from db path. (current: %s)\n"
+            "    -L  --lambda       Load a LambdaMOO database.\n"
             "    -p  --port=NUM     System listener port. (default: %s) (current: %s)\n",
             args[ 0 ],
             DEFAULT_DB_PATH, dbPath,
@@ -170,6 +181,12 @@ private:
  *
  */
 string dbPath_ = DEFAULT_DB_PATH;
+
+
+/**
+ *
+ */
+bool lambda_ = false;
 
 
 /**

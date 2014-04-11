@@ -27,7 +27,7 @@ module moo.types;
  */
 alias MFloat    = double    ;
 alias MInt      = long      ;
-alias MList     = Value[]   ;
+alias MList     = MValue[]  ;
 alias MString   = dstring   ;
 
 
@@ -58,7 +58,7 @@ enum MError : MInt
 /**
  * 
  */
-enum Type : MInt
+enum MType : MInt
 {
     Int,
     Obj,
@@ -78,11 +78,11 @@ enum Type : MInt
 /**
  * 
  */
-struct Value
+struct MValue
 {
 
 
-    Type type = Type.None;
+    MType type = MType.None;
 
 
     union
@@ -100,10 +100,10 @@ struct Value
     /**
      *
      */
-    static @safe Value clear () nothrow
+    static @safe MValue clear () nothrow
     {
-        Value result;
-        result.type = Type.Clear;
+        MValue result;
+        result.type = MType.Clear;
         result.i = 0;
         return result;
     }
@@ -112,10 +112,10 @@ struct Value
     /**
      *
      */
-    static @safe Value obj ( MInt val ) nothrow
+    static @safe MValue obj ( MInt val ) nothrow
     {
-        Value result;
-        result.type = Type.Obj;
+        MValue result;
+        result.type = MType.Obj;
         result.i = val;
         return result;
     }
@@ -126,42 +126,42 @@ struct Value
      */
     @safe this ( MInt val ) pure nothrow
     {
-        type = Type.Int;
+        type = MType.Int;
         i = val;
     }
 
     ///ditto
     @safe this ( MString val ) pure nothrow
     {
-        type = Type.String;
+        type = MType.String;
         s = val;
     }
 
     ///ditto
     @safe this ( MError val ) pure nothrow
     {
-        type = Type.Err;
+        type = MType.Err;
         e = val;
     }
 
     ///ditto
     @safe this ( const( MList ) val ) pure
     {
-        type = Type.List;
+        type = MType.List;
         l = val.dup;
     }
 
     ///ditto
     @safe this ( MFloat val ) pure nothrow
     {
-        type = Type.Float;
+        type = MType.Float;
         f = val;
     }
 
     ///ditto
     @safe this ( MSymbol val ) nothrow
     {
-        type = Type.Symbol;
+        type = MType.Symbol;
         y = val;
     }
 
@@ -187,7 +187,7 @@ struct Value
     {}
 
 
-} // end Value
+} // end MValue
 
 
 /**
@@ -220,21 +220,14 @@ struct MSymbol
      *
      */
     @safe this ( this ) pure nothrow
-    {
-        ++entry.refs;
-    }
+    {}
 
 
     /**
      *
      */
     @safe ~this () nothrow
-    {
-        --entry.refs;
-        if ( entry.refs == 0 ) {
-            destroyEntry( entry );
-        }
-    }
+    {}
 
 
     /**
@@ -299,7 +292,7 @@ struct MSymbol
         assert( result != null );
     }
     body {
-        auto e = new Entry( str, h, 0 );
+        auto e = new Entry( str, h );
         registry[ h ] = e;
         return e;
     }
@@ -333,12 +326,6 @@ struct MSymbol
          *
          */
         MHash hash;
-
-
-        /**
-         *
-         */
-        size_t refs = 0;
     }
 
 
@@ -348,7 +335,6 @@ struct MSymbol
     @safe this ( Entry* e ) pure nothrow
     {
         entry = e;
-        ++entry.refs;
     }
 
 

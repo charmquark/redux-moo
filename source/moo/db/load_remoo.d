@@ -15,9 +15,17 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *  
+ *
  */
-module moo.db;
+module moo.db.load_remoo;
 
-public import   moo.db.runtime  ,
-                moo.db.types    ;
+import std.stdio : File;
+
+
+/**
+ *
+ */
+void load ( ref File file )
+{
+}
+
