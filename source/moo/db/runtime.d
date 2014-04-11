@@ -15,7 +15,7 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *  
+ *  Database system runtime and main API.
  */
 module moo.db.runtime;
 
@@ -28,7 +28,7 @@ import log      = moo.log       ;
 
 
 /**
- *
+ *  Perform any pending work.
  */
 void run ()
 {
@@ -36,22 +36,46 @@ void run ()
 
 
 /**
+ *  Select an object from the database.
  *
+ *  Params:
+ *      oid = desired object #id
+ *
+ *  Returns: a pointer to a const view of the selected object, or null if invalid
+ */
+@safe const( MObject )* select ( MInt oid ) nothrow
+{
+    auto ptr = unsafeSelect( oid );
+    if ( ptr != null && ptr.recycled ) {
+        ptr = null;
+    }
+    return ptr;
+}
+
+
+/**
+ *  Start the database system.
  */
 void start ()
 {
     exitCodeEnforce!`Internal`( !active, `start() called on active database system` );
     log.info( `Starting database system.` );
+    debug {
+        log.info( ` * size of an object : %d`, MObject.sizeof );
+        log.info( ` * size of a property: %d`, MProperty.sizeof );
+        log.info( ` * size of a value   : %d`, MValue.sizeof );
+        log.info( ` * size of a verb    : %d`, MVerb.sizeof );
+    }
     load();
-    validate();
+    exitCodeEnforce`InvalidDb`( validate(), `database failed validation` );
     active = true;
 }
 
 
 /**
- *
+ *  Stop the database system.
  */
-void stop ()
+@safe void stop () nothrow
 {
     if ( active ) {
         log.info( `Stopping database system.` );
@@ -65,9 +89,12 @@ package:
 
 
 /**
+ *  Reserve a minimum number of slots in the database.
  *
+ *  Params:
+ *      requestedSize   = the desired minimum size (kinda obvious)
  */
-void reserve ( MInt requestedSize )
+@safe void reserve ( size_t requestedSize ) nothrow
 {
     if ( world.length < requestedSize ) {
         world.length = requestedSize;
@@ -76,9 +103,15 @@ void reserve ( MInt requestedSize )
 
 
 /**
+ *  Select an object from the database. This is "unsafe" in that it returns a mutable view and will
+ *  select recycled objects. Outside code should use select() instead.
  *
+ *  Params:
+ *      oid = desired object #id
+ *
+ *  Returns: a pointer to the selected object, or null if the #id is outside the database's range.
  */
-MObject* unsafeSelect ( MInt oid )
+@trusted MObject* unsafeSelect ( MInt oid ) nothrow
 {
     MObject* ptr = null;
     if ( oid >= 0 && oid < world.length ) {
@@ -89,17 +122,24 @@ MObject* unsafeSelect ( MInt oid )
 
 
 /**
+ *  Select a verb from the database by index. This is "unsafe" in that it returns a mutable view.
  *
+ *  Params:
+ *      oid = object #id to select the verb from
+ *      vid = index of the desired verb
+ *
+ *  Returns: a pointer to the selected verb, or null if invalid
  */
-MVerb* unsafeSelectVerb ( MInt oid, MInt vid )
+@safe MVerb* unsafeSelectVerb ( MInt oid, MInt vid ) nothrow
 {
-    auto obj = unsafeSelect( oid );
-    if ( vid >= 0 && vid < obj.verbs.length ) {
-        return &obj.verbs[ vid ];
+    MVerb* ptr = null;
+    if ( vid >= 0 ) {
+        auto obj = unsafeSelect( oid );
+        if ( obj != null && vid < obj.verbs.length ) {
+            ptr = &obj.verbs[ vid ];
+        }
     }
-    else {
-        return null;
-    }
+    return ptr;
 }
 
 
@@ -107,20 +147,12 @@ MVerb* unsafeSelectVerb ( MInt oid, MInt vid )
 private:
 
 
-/**
- *
- */
-bool active = false;
+bool        active  = false ; /// whether the system is active; ie, whether start() has been called
+MObject[]   world           ; /// actual object storage
 
 
 /**
- *
- */
-MObject[] world;
-
-
-/**
- *
+ *  Load the database from disc.
  */
 void load ()
 {
@@ -155,9 +187,13 @@ void load ()
 
 
 /**
+ *  Validate a loaded database, checking for inheritance/location cycles, invalid owners, etc.
  *
+ *  Returns: true for pass, false for fail.
  */
-@safe void validate () pure nothrow
+@safe bool validate () pure nothrow
 {
+    bool pass = true;
+    return pass;
 }
 

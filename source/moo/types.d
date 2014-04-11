@@ -176,14 +176,14 @@ struct MValue
     /**
      *
      */
-    @safe ~this () pure nothrow
+    @safe ~this () const pure nothrow
     {}
 
 
     /**
      *
      */
-    @safe this ( const this ) nothrow
+    @safe this ( ref const this ) const pure nothrow
     {}
 
 

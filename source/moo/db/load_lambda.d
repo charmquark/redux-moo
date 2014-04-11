@@ -15,19 +15,26 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *
+ *  Loads and converts a LambdaMOO database.
  */
 module moo.db.load_lambda;
 
 import std.range;
+import std.traits;
 import std.stdio : File;
 
 
 /**
+ *  Loader driver function.
  *
+ *  Params:
+ *      file    = source file
  */
 void load ( ref File file )
-{
+in {
+    assert( file.isOpen );
+}
+body {
     auto lines = file.byLine;
     Loader!( typeof( lines ) ) loader;
     loader.src = lines;
@@ -40,10 +47,10 @@ private:
 
 
 /**
- *
+ *  LambdaMOO loader implementation.
  */
 struct Loader ( R )
-if ( isInputRange!R )
+if ( isInputRange!R && isSomeString!( ElementType!R ) )
 {
     import std.conv;
     import std.format : formattedRead;
@@ -54,28 +61,22 @@ if ( isInputRange!R )
     import log = moo.log;
 
 
-    /**
-     *
-     */
-    R src;
+    R                   src         ; /// source input
+    MSymbol[][ MInt ]   defCache    ; /// property definition cache
+    MProperty[][ MInt ] valueCache  ; /// property value cache (values include owner/perms as well)
 
 
     /**
+     *  Map properties to their respective objects. This is done in a funky way because the
+     *  LambdaMOO database format is based around some assumptions about ordering, and those
+     *  assumptions do not hold under ReduxMOO.
      *
+     *  Params:
+     *      objectCount = number of objects to seek properties for; we use this rather than relying
+     *          on the cache keys because, contrary to popular belief, MOO does not actually dictate
+     *          a strict hierarchy
      */
-    MSymbol[][ MInt ] defCache;
-
-
-    /**
-     *
-     */
-    MProperty[][ MInt ] valueCache;
-
-
-    /**
-     *
-     */
-    void applyProperties ( MInt objectCount )
+    @safe void applyProperties ( MInt objectCount ) nothrow
     {
         MObject*[] tree;
         MSymbol[] defs;
@@ -101,14 +102,14 @@ if ( isInputRange!R )
             tree.length = 0;
             defs.length = 0;
         }
-        log.info( `Wrote %d properties.`, total );
+        log.info( `Applied %d properties.`, total );
     }
 
 
     /**
      *
      */
-    void load ()
+    @safe void load ()
     {
         nextLine();                     // skip metaline
         auto objectCount = readSize();
@@ -132,7 +133,7 @@ if ( isInputRange!R )
             loadProgram();
         }
 
-        log.info( `Writing properties onto objects (Lambda conversion)` );
+        log.info( `Applying properties to objects (Lambda conversion)` );
         applyProperties( objectCount );
 
         log.info( `Finished reading database` );
@@ -142,7 +143,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    void loadObject ()
+    @trusted void loadObject ()
     {
         auto buf = nextLine();
         MInt oid;
@@ -175,7 +176,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    void loadObjectFlags ( MObject* obj )
+    @safe void loadObjectFlags ( MObject* obj )
     {
         enum {
             PLAYER     = 0x01,
@@ -199,7 +200,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    void loadProgram ()
+    @trusted void loadProgram ()
     {
         import std.array  : Appender;
         import std.format : formattedRead;
@@ -229,7 +230,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    void loadProperties ( MInt oid )
+    @safe void loadProperties ( MInt oid )
     {
         auto defs = new MSymbol[]( readSize() );
         foreach ( ref elem ; defs ) {
@@ -258,7 +259,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    MVerb loadVerb ()
+    @safe MVerb loadVerb ()
     {
         import std.conv;
 
@@ -295,7 +296,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    char[] nextLine ()
+    @trusted const( char )[] nextLine ()
     {
         import moo.exception;
 
@@ -309,7 +310,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    T read ( T ) ()
+    @safe T read ( T ) ()
     {
         return nextLine.to!T();
     }
@@ -327,7 +328,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    MObject* readObjRef ()
+    @safe MObject* readObjRef ()
     {
         return db.unsafeSelect( readInt() );
     }
@@ -336,7 +337,7 @@ if ( isInputRange!R )
     /**
      *
      */
-    MValue readValue ()
+    @safe MValue readValue ()
     {
         import std.conv;
         import moo.exception;
@@ -353,15 +354,16 @@ if ( isInputRange!R )
 
             case List:
                 result.type = List;
-                result.l = new MList( readSize() );
-                foreach ( ref elem ; result.l ) {
+                auto data = new MList( readSize() );
+                foreach ( ref elem ; data ) {
                     elem = readValue();
                 }
-                return result;
+                result.l = data;
+                break;
 
-            case None       :
-            case Catch      :
-            case Finally    :
+            case None       : goto case;
+            case Catch      : goto case;
+            case Finally    : goto case;
             case Symbol     :
             //default         :
                 throw new ExitCodeException( ExitCode.InvalidDb, `Malformed property value` );

@@ -31,27 +31,30 @@ immutable SEPARATOR = ` -- `;
 /**
  *
  */
-void error ( Args... ) ( string msg, Args args )
+@safe void error ( Args... ) ( string msg, Args args ) nothrow
 {
     write( `ERROR`, msg, args );
 }
 
 ///ditto
-void error () ( Exception x )
+@trusted void error () ( Exception x ) nothrow
 {
-    write( `ERROR`, x.toString() );
-    auto cause = x.next;
-    while ( cause !is null ) {
-        writePlain( cause.toString() );
-        cause = cause.next;
+    try {
+        write( `ERROR`, x.toString() );
+        auto cause = x.next;
+        while ( cause !is null ) {
+            writePlain( cause.toString() );
+            cause = cause.next;
+        }
     }
+    catch ( Exception x ) {}
 }
 
 
 /**
  *
  */
-void info ( Args... ) ( string msg, Args args )
+@safe void info ( Args... ) ( string msg, Args args ) nothrow
 {
     write( `info`, msg, args );
 }
@@ -84,33 +87,52 @@ void stop ()
 private:
 
 
-/**
- *
- */
-File file;
+File file; /// 
 
 
 /**
  *
  */
-void write ( Args... ) ( string prefix, string msg, Args args )
+@trusted void fail () nothrow
+{
+    import std.stdio : stderr;
+
+    import config = moo.config;
+
+    try {
+        stderr.writeln( `### ReduxMOO error ### Can no longer reach log file...? Server shutting down.` );
+    }
+    catch ( Throwable t ) {}
+    config.shouldContinue = false;
+}
+
+
+/**
+ *
+ */
+@trusted void write ( Args... ) ( string prefix, string msg, Args args ) nothrow
 {
     import std.datetime : Clock;
     import std.format : formattedWrite;
 
-    if ( file.isOpen ) {
-        auto w = file.lockingTextWriter();
-        w.put( Clock.currTime().toSimpleString() );
-        w.put( SEPARATOR );
-        w.put( prefix );
-        w.put( SEPARATOR );
-        static if ( Args.length == 0 ) {
-            w.put( msg );
+    try {
+        if ( file.isOpen ) {
+            auto w = file.lockingTextWriter();
+            w.put( Clock.currTime().toSimpleString() );
+            w.put( SEPARATOR );
+            w.put( prefix );
+            w.put( SEPARATOR );
+            static if ( Args.length == 0 ) {
+                w.put( msg );
+            }
+            else {
+                formattedWrite( w, msg, args );
+            }
+            w.put( '\n' );
         }
-        else {
-            formattedWrite( w, msg, args );
-        }
-        w.put( '\n' );
+    }
+    catch ( Exception x ) {
+        fail();
     }
 }
 
@@ -118,10 +140,15 @@ void write ( Args... ) ( string prefix, string msg, Args args )
 /**
  *
  */
-void writePlain ( string msg )
+@trusted void writePlain ( string msg ) nothrow
 {
-    if ( file.isOpen ) {
-        file.writeln( SEPARATOR, msg );
+    try {
+        if ( file.isOpen ) {
+            file.writeln( SEPARATOR, msg );
+        }
+    }
+    catch ( Exception x ) {
+        fail();
     }
 }
 
