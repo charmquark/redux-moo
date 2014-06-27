@@ -302,7 +302,7 @@ struct MValue
     MType type = MType.None;
 
 
-    static @safe MValue Clear () nothrow
+    static @safe MValue Clear() pure nothrow
     {
         MValue result;
         result.type = MType.Clear;
@@ -311,7 +311,7 @@ struct MValue
     }
 
 
-    static @safe MValue Obj ( MInt val ) nothrow
+    static @safe MValue Obj(MInt val) pure nothrow
     {
         MValue result;
         result.type = MType.Obj;
@@ -320,49 +320,49 @@ struct MValue
     }
 
 
-    @safe this ( MInt val ) pure nothrow
+    @safe this(MInt val) pure nothrow
     {
         type = MType.Int;
         i = val;
     }
 
 
-    @safe this ( MString val ) pure nothrow
+    @safe this(MString val) pure nothrow
     {
         type = MType.String;
         s = val;
     }
 
 
-    @safe this ( MError val ) pure nothrow
+    @safe this(MError val) pure nothrow
     {
         type = MType.Err;
         e = val;
     }
 
 
-    @safe this ( const( MList ) val ) pure
+    @safe this(in MList val) pure
     {
         type = MType.List;
         l = val.dup;
     }
 
 
-    @safe this ( MFloat val ) pure nothrow
+    @safe this(MFloat val) pure nothrow
     {
         type = MType.Float;
         f = val;
     }
 
 
-    @safe this ( MSymbol val ) nothrow
+    @safe this(MSymbol val) pure nothrow
     {
         type = MType.Symbol;
         y = val;
     }
 
 
-    @safe this ( MObject val ) nothrow
+    @safe this(MObject val) pure nothrow
     {
         if ( val !is null ) {
             type = MType.ObjRef;
