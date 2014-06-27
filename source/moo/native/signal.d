@@ -39,7 +39,7 @@ version( Posix )
      */
     private extern( C ) @system void quit_on_signal ( int signo ) nothrow
     {
-        import config = moo.config;
+        import moo.config;
 
         config.shouldContinue = false;
     }

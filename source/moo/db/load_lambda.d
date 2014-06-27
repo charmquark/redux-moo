@@ -53,17 +53,18 @@ struct Loader ( R )
 if ( isInputRange!R && isSomeString!( ElementType!R ) )
 {
     import std.conv;
+
     import std.format : formattedRead;
 
-    import moo.types;
+    import moo.log;
     import moo.db.types;
-    import db  = moo.db ;
-    import log = moo.log;
+
+    import db = moo.db ;
 
 
     R                   src         ; /// source input
-    MSymbol[][ MInt ]   defCache    ; /// property definition cache
-    MProperty[][ MInt ] valueCache  ; /// property value cache (values include owner/perms as well)
+    MSymbol[][MInt]     defCache    ; /// property definition cache
+    MProperty[][MInt]   valueCache  ; /// property value cache (values include owner/perms as well)
 
 
     /**
@@ -78,40 +79,42 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *          on the cache keys because, contrary to popular belief, MOO does not actually dictate
      *          a strict hierarchy
      */
-    @safe void applyProperties ( MInt objectCount ) nothrow
+    @safe void applyProperties(MInt objectCount) nothrow
     {
-        MObject*[] tree;
+        MObject[] tree;
         MSymbol[] defs;
 
         ulong total = 0;
-        foreach ( oid ; 0 .. objectCount ) {
-            auto obj = db.unsafeSelect( oid );
-            if ( obj == null || obj.recycled ) {
+        foreach (oid; 0 .. objectCount) {
+            auto obj = db.mutableSelect(oid);
+            if (obj is null)
+            {
                 continue;
             }
-
-            for ( auto o = obj ; o != null ; o = o.parent ) {
-                tree ~= o;
+            foreach (x; obj.inheritanceHierarchy)
+            {
+                tree ~= x;
             }
-            foreach_reverse ( o ; tree ) {
-                defs ~= defCache[ o.id ];
+            foreach_reverse (x; tree)
+            {
+                defs ~= defCache[x.id];
             }
-            foreach ( i, ref x ; valueCache[ oid ] ) {
-                obj.properties[ defs[ i ] ] = x;
+            foreach (i, x; valueCache[oid])
+            {
+                obj.properties[defs[i]] = x;
                 ++total;
             }
-
             tree.length = 0;
             defs.length = 0;
         }
-        log.info( `Applied %d properties.`, total );
+        log( `Applied %d properties.`, total );
     }
 
 
     /**
      *  Run the loading procedure. Pure madness.
      */
-    @safe void load ()
+    @safe void load()
     {
         nextLine();                     // skip metaline
         auto objectCount = readSize();
@@ -120,46 +123,50 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
 
         auto playerCount = readSize();
         auto playerIds = new MInt[]( playerCount );
-        foreach ( ref elem ; playerIds ) {
+        foreach (ref elem; playerIds)
+        {
             elem = readInt();
         }
 
-        log.info( `Reading %s objects.`, objectCount );
-        db.reserve( objectCount );
-        foreach ( i ; 0 .. objectCount ) {
+        log(`Reading %s objects.`, objectCount);
+        db.reserve(objectCount);
+        foreach (i; 0 .. objectCount)
+        {
             loadObject();
         }
 
-        log.info( `Reading %s verb programs.`, programCount );
-        foreach ( i ; 0 .. programCount ) {
+        log(`Reading %s verb programs.`, programCount);
+        foreach (i; 0 .. programCount)
+        {
             loadProgram();
         }
 
-        log.info( `Applying properties to objects (Lambda conversion)` );
-        applyProperties( objectCount );
+        log(`Applying properties to objects (Lambda conversion)`);
+        applyProperties(objectCount);
 
-        log.info( `Finished reading database` );
+        log(`Finished reading database`);
     }
 
 
     /**
      *  Load an object, if it is valid (ie, not recycled).
      */
-    @trusted void loadObject ()
+    @trusted void loadObject()
     {
         auto buf = nextLine();
-        MInt oid;
-        buf.formattedRead( `#%d`, &oid );
-        auto obj = db.unsafeSelect( oid );
-        obj.id = oid;
-        if ( buf.length > 10 && buf[ $ - 8 .. $ ] == `recycled` ) {
+        if (buf.length > 10 && buf[$ - 8 .. $] == `recycled` )
+        {
             return;
         }
+        MInt oid;
+        buf.formattedRead(`#%d`, &oid);
+        auto obj = db.mutableSelect(oid, true);
 
-        obj.recycled = false;
-        obj.name = readString();
+        obj.recycled    = false;
+        obj.name        = readString();
         nextLine(); // this line is always blank
-        loadObjectFlags( obj );
+        obj.flags       = readFlags();
+
         obj.owner       = readObjRef();
         obj.location    = readObjRef();
         obj.content     = readObjRef();
@@ -168,35 +175,11 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
         obj.child       = readObjRef();
         obj.sibling     = readObjRef();
 
-        foreach ( i ; 0 .. readSize() ) {
-            obj.add( loadVerb() );
+        foreach (i; 0 .. readSize())
+        {
+            obj.verbs ~= loadVerb();
         }
-        loadProperties( oid );
-    }
-
-
-    /**
-     *  Read and convert a set of object flags. LambdaMOO used bitvectors, but ReduxMOO uses plain
-     *  booleans.
-     */
-    @safe void loadObjectFlags ( MObject* obj )
-    {
-        enum {
-            PLAYER     = 0x01,
-            PROGRAMMER = 0x02,
-            WIZARD     = 0x04,
-            READ       = 0x10,
-            WRITE      = 0x20,
-            FERTILE    = 0x80
-        }
-
-        auto flags = readFlags();
-        obj.player      = ( flags & PLAYER     ) != 0;
-        obj.programmer  = ( flags & PROGRAMMER ) != 0;
-        obj.wizard      = ( flags & WIZARD     ) != 0;
-        obj.readable    = ( flags & READ       ) != 0;
-        obj.writable    = ( flags & WRITE      ) != 0;
-        obj.fertile     = ( flags & FERTILE    ) != 0;
+        loadProperties(oid);
     }
 
 
@@ -218,12 +201,13 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
         MInt    oid;
         size_t  vid;
         auto buf = readString();
-        formattedRead( buf, `#%d:%d`, &oid, &vid );
+        formattedRead(buf, `#%d:%d`, &oid, &vid);
         auto verb = exitCodeEnforce!`InvalidDb`(
-            db.unsafeSelectVerb( oid, vid ),
-            `Program listing found for nonexistant verb #%d:%d`.format( oid, vid )
+            db.mutableSelectVerb(oid, vid),
+            `Program listing found for nonexistant verb #%d:%d`.format(oid, vid)
         );
-        for ( buf = readString() ; buf != "."d; buf = readString() ) {
+        for (buf = readString(); buf != "."d; buf = readString())
+        {
             source.put( buf );
             source.put( '\n' );
         }
@@ -241,29 +225,23 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *  Params:
      *      oid = object #id whose properties we are reading
      */
-    @safe void loadProperties ( MInt oid )
+    @safe void loadProperties(MInt oid)
     {
-        auto defs = new MSymbol[]( readSize() );
-        foreach ( ref elem ; defs ) {
-            elem = MSymbol[ readString() ];
+        auto defs = new MSymbol[](readSize());
+        foreach (ref elem; defs )
+        {
+            elem = MSymbol[readString()];
         }
-        defCache[ oid ] = defs;
+        defCache[oid] = defs;
 
-        enum {
-            READ    = 0x01,
-            WRITE   = 0x02,
-            CHOWN   = 0x04
-        }
-        auto vals = new MProperty[]( readSize() );
-        foreach ( ref elem ; vals ) {
+        auto vals = new MProperty[](readSize());
+        foreach (ref elem; vals)
+        {
             elem.value = readValue();
             elem.owner = readObjRef();
-            auto flags = readFlags();
-            elem.readable   = ( flags & READ  ) != 0;
-            elem.writable   = ( flags & WRITE ) != 0;
-            elem.chownable  = ( flags & CHOWN ) != 0;
+            elem.flags = readFlags();
         }
-        valueCache[ oid ] = vals;
+        valueCache[oid] = vals;
     }
 
 
@@ -272,36 +250,13 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *
      *  Returns: the verb (duh).
      */
-    @safe MVerb loadVerb ()
+    @safe MVerb loadVerb()
     {
-        import std.conv;
-
-        enum {
-            READ    = 0x01,
-            WRITE   = 0x02,
-            EXEC    = 0x04,
-
-            DA_MASK = 0x30,
-            DA_NONE = 0x00,
-            DA_ANY  = 0x10,
-            DA_THIS = 0x20,
-
-            IA_MASK = 0xC0,
-            IA_NONE = 0x00,
-            IA_ANY  = 0x40,
-            IA_THIS = 0x80
-        }
-
-        MVerb vb;
-        vb.name = readString();
-        vb.owner = readObjRef();
-        auto flags = readFlags();
-        vb.readable         = ( flags & READ  ) != 0;
-        vb.writable         = ( flags & WRITE ) != 0;
-        vb.executable       = ( flags & EXEC  ) != 0;
-        vb.directObject     = to!MVerbArgument( ( flags & DA_MASK ) / DA_ANY );
-        vb.indirectObject   = to!MVerbArgument( ( flags & IA_MASK ) / IA_ANY );
-        vb.preposition      = readInt();
+        auto vb = new MVerb;
+        vb.name         = readString();
+        vb.owner        = readObjRef();
+        vb.flags        = readFlags();
+        vb.preposition  = readInt();
         return vb;
     }
 
@@ -313,11 +268,11 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *
      *  Throws: an ExitCodeException if the source is empty.
      */
-    @trusted const( char )[] nextLine ()
+    @trusted const(char)[] nextLine()
     {
         import moo.exception;
 
-        exitCodeEnforce!`InvalidDb`( !src.empty, `Unexpected end of database file` );
+        exitCodeEnforce!`InvalidDb`(!src.empty, `Unexpected end of database file`);
         auto result = src.front.dup;
         src.popFront();
         return result;
@@ -329,13 +284,13 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *
      *  Returns: the read and converted value.
      */
-    @safe T read ( T ) ()
+    @safe T read(T)()
     {
         return nextLine.to!T();
     }
 
 
-    alias readFlags     = read!ubyte    ; /// convenience alias for read!T
+    alias readFlags     = read!size_t   ; /// convenience alias for read!T
     alias readInt       = read!MInt     ; /// ditto
     alias readSize      = read!size_t   ; /// ditto
     alias readString    = read!MString  ; /// ditto
@@ -344,11 +299,11 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
     /**
      *  Reads an object #id from the source, and selects that object.
      *
-     *  Returns: a pointer to the selected object.
+     *  Returns: the selected object.
      */
-    @safe MObject* readObjRef ()
+    @safe MObject readObjRef()
     {
-        return db.unsafeSelect( readInt() );
+        return db.mutableSelect(readInt(), true);
     }
 
 
@@ -359,38 +314,30 @@ if ( isInputRange!R && isSomeString!( ElementType!R ) )
      *
      *  Throws: an ExitCodeException if the value's type is malformed/unrecognized.
      */
-    @safe MValue readValue ()
+    @safe MValue readValue()
     {
         import std.conv;
         import moo.exception;
 
-        MValue result;
-        auto t = readInt().to!MType();
-        final switch ( t ) with ( MType ) {
-            case Int    : result = MValue( readInt() );             break;
-            case Obj    : result = MValue.obj( readInt() );         break;
-            case String : result = MValue( readString() );          break;
-            case Err    : result = MValue( readInt().to!MError() ); break;
-            case Clear  : result = MValue.clear();                  break;
-            case Float  : result = MValue( read!MFloat() );         break;
+        switch (readInt().to!MType()) with (MType) {
+            case Int    : return MValue(readInt());
+            case Obj    : return MValue.Obj(readInt());
+            case String : return MValue(readString());
+            case Err    : return MValue(readInt().to!MError());
+            case Clear  : return MValue.Clear();
+            case Float  : return MValue(read!MFloat());
 
             case List:
-                result.type = List;
-                auto data = new MList( readSize() );
-                foreach ( ref elem ; data ) {
+                auto data = new MList(readSize());
+                foreach (ref elem; data)
+                {
                     elem = readValue();
                 }
-                result.l = data;
-                break;
+                return MValue(data);
 
-            case None       : goto case;
-            case Catch      : goto case;
-            case Finally    : goto case;
-            case Symbol     :
-            //default         :
+            default:
                 throw new ExitCodeException( ExitCode.InvalidDb, `Malformed property value type` );
         }
-        return result;
     }
 
 

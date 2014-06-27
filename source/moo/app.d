@@ -35,19 +35,20 @@ in {
     assert( args.length > 0 );
 }
 body {
-    import config = moo.config;
+    import moo.config;
 
     config.parseArgs( args );
     if ( config.shouldStart ) {
+        import moo.log;
+
         import sig  = moo.native.signal ;
         import db   = moo.db            ;
-        import log  = moo.log           ;
         import net  = moo.net           ;
         import vm   = moo.vm            ;
 
         try {
-            log.start();
-            log.info( `Starting ReduxMOO %s`, config.APP_VERSION );
+            startLog();
+            log( `Starting ReduxMOO %s`, APP_VERSION );
 
             db.start();
             vm.start();
@@ -62,18 +63,40 @@ body {
             }
         }
         catch ( Exception x ) {
-            config.checkUncaughtException( x );
-            log.error( x );
+            checkUncaughtException( x );
+            logError( x );
         }
         finally {
             net.stop();
             vm.stop();
             db.stop();
 
-            log.info( `Goodbye.` );
-            log.stop();
+            log( `Goodbye.` );
+            stopLog();
         }
     }
+    else {
+        showHelp( args[ 0 ] );
+    }
     return config.exitCode;
+}
+
+
+/**
+ *
+ */
+void showHelp ( in string cmd )
+{
+    import std.stdio : stdout;
+
+    stdout.write(
+        "USAGE: ", cmd, " [options]\n\n"
+        "OPTIONS:\n"
+        "    -?  --help         Show this help text\n"
+        "    -f  --file=PATH    Set path to database file\n"
+        "    -l  --log=PATH     Set path to log file; defaults to <db basename>.log\n"
+        "    -L  --lambda       Load and convert a LambdaMOO database\n"
+        "    -p  --port=NUM     System listener port\n"
+    );
 }
 

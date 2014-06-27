@@ -19,12 +19,10 @@
  */
 module moo.db.runtime;
 
-import moo.exception;
-import moo.types;
-import moo.db.types;
-
-import config   = moo.config    ;
-import log      = moo.log       ;
+import  moo.config      ,
+        moo.exception   ,
+        moo.log         ,
+        moo.db.types    ;
 
 
 /**
@@ -43,31 +41,32 @@ void run ()
  *
  *  Returns: a pointer to a const view of the selected object, or null if invalid
  */
-@safe const( MObject )* select ( MInt oid ) nothrow
+@safe const(MObject) select(MInt oid) nothrow
 {
-    auto ptr = unsafeSelect( oid );
-    if ( ptr != null && ptr.recycled ) {
-        ptr = null;
+    auto obj = mutableSelect(oid);
+    if (obj !is null && obj.recycled)
+    {
+        obj = null;
     }
-    return ptr;
+    return obj;
 }
 
 
 /**
  *  Start the database system.
  */
-void start ()
+void start()
 {
-    exitCodeEnforce!`Internal`( !active, `start() called on active database system` );
-    log.info( `Starting database system.` );
+    exitCodeEnforce!`Internal`(!active, `start() called on active database system`);
+    log(`Starting database system.`);
     debug {
-        log.info( ` * size of an object : %d`, MObject.sizeof );
-        log.info( ` * size of a property: %d`, MProperty.sizeof );
-        log.info( ` * size of a value   : %d`, MValue.sizeof );
-        log.info( ` * size of a verb    : %d`, MVerb.sizeof );
+        log(` * size of an object : %d`, __traits(classInstanceSize, MObject));
+        log(` * size of a property: %d`, MProperty.sizeof);
+        log(` * size of a value   : %d`, MValue.sizeof);
+        log(` * size of a verb    : %d`, __traits(classInstanceSize, MVerb));
     }
     load();
-    exitCodeEnforce`InvalidDb`( validate(), `database failed validation` );
+    exitCodeEnforce!`InvalidDb`(validate(), `database failed validation`);
     active = true;
 }
 
@@ -78,7 +77,7 @@ void start ()
 @safe void stop () nothrow
 {
     if ( active ) {
-        log.info( `Stopping database system.` );
+        log( `Stopping database system.` );
         active = false;
     }
 }
@@ -93,7 +92,7 @@ package:
  *
  *  Params:
  *      requestedSize   = the desired minimum size (kinda obvious)
- */
+  */
 @safe void reserve ( size_t requestedSize ) nothrow
 {
     if ( world.length < requestedSize ) {
@@ -103,21 +102,27 @@ package:
 
 
 /**
- *  Select an object from the database. This is "unsafe" in that it returns a mutable view and will
- *  select recycled objects. Outside code should use select() instead.
+ *  Select an object from the database. Will select recycled objects. Outside code should use
+ *  select() instead.
  *
  *  Params:
- *      oid = desired object #id
+ *      oid     = desired object #id
+ *      create  = whether to create the object if it does not exist
  *
- *  Returns: a pointer to the selected object, or null if the #id is outside the database's range.
+ *  Returns: a reference to the selected object, or null if the #id is outside the database's range.
  */
-@trusted MObject* unsafeSelect ( MInt oid ) nothrow
+@trusted MObject mutableSelect(MInt oid, bool shouldCreate = false) nothrow
 {
-    MObject* ptr = null;
-    if ( oid >= 0 && oid < world.length ) {
-        ptr = &world[ oid ];
+    MObject obj = null;
+    if (oid >= 0 && oid < world.length)
+    {
+        obj = world[oid];
+        if (obj is null && shouldCreate)
+        {
+            obj = world[oid] = new MObject(oid);
+        }
     }
-    return ptr;
+    return obj;
 }
 
 
@@ -130,16 +135,14 @@ package:
  *
  *  Returns: a pointer to the selected verb, or null if invalid
  */
-@safe MVerb* unsafeSelectVerb ( MInt oid, MInt vid ) nothrow
+@safe MVerb mutableSelectVerb(MInt oid, MInt vid) nothrow
 {
-    MVerb* ptr = null;
-    if ( vid >= 0 ) {
-        auto obj = unsafeSelect( oid );
-        if ( obj != null && vid < obj.verbs.length ) {
-            ptr = &obj.verbs[ vid ];
-        }
+    MVerb v = null;
+    if (auto o = mutableSelect(oid))
+    {
+        v = o.selectVerb(vid);
     }
-    return ptr;
+    return v;
 }
 
 
@@ -169,11 +172,11 @@ void load ()
     auto file = File( config.dbPath, `r` );
     try {
         if ( config.lambda ) {
-            log.info( `Will load LambdaMOO database from %s`, config.dbPath );
+            log( `Will load LambdaMOO database from %s`, config.dbPath );
             lloader.load( file );
         }
         else {
-            log.info( `Will load ReduxMOO database from %s`, config.dbPath );
+            log( `Will load ReduxMOO database from %s`, config.dbPath );
             rloader.load( file );
         }
     }

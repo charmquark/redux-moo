@@ -25,22 +25,10 @@ import std.stdio : File;
 /**
  *
  */
-immutable SEPARATOR = ` -- `;
-
-
-/**
- *
- */
-@safe void error ( Args... ) ( string msg, Args args ) nothrow
-{
-    write( `ERROR`, msg, args );
-}
-
-///ditto
-@trusted void error () ( Exception x ) nothrow
+@trusted void logError () ( Exception x ) nothrow
 {
     try {
-        write( `ERROR`, x.toString() );
+        write( x.toString() );
         auto cause = x.next;
         while ( cause !is null ) {
             writePlain( cause.toString() );
@@ -54,19 +42,19 @@ immutable SEPARATOR = ` -- `;
 /**
  *
  */
-@safe void info ( Args... ) ( string msg, Args args ) nothrow
+@safe void log ( Args... ) ( string msg, Args args ) nothrow
 {
-    write( `info`, msg, args );
+    write( msg, args );
 }
 
 
 /**
  * Start the logger system.
  */
-void start ()
+void startLog ()
 {
     import core.stdc.stdio : _IOLBF;
-    import config = moo.config;
+    import moo.config;
 
     assert( !file.isOpen );
     file.open( config.logPath, `w` );
@@ -77,7 +65,7 @@ void start ()
 /**
  *
  */
-void stop ()
+void stopLog ()
 {
     file.close();
 }
@@ -93,16 +81,26 @@ File file; ///
 /**
  *
  */
-@trusted void fail () nothrow
+immutable SEPARATOR = "\t-- ";
+
+
+/**
+ *
+ */
+@trusted void fail ( in Exception x ) nothrow
 {
     import std.stdio : stderr;
-
-    import config = moo.config;
+    import moo.config;
 
     try {
-        stderr.writeln( `### ReduxMOO error ### Can no longer reach log file...? Server shutting down.` );
+        auto w = stderr.lockingTextWriter();
+        w.put( "### ReduxMOO error ### Can no longer reach log file...? Server shutting down.\n" );
+        w.put( "### ReduxMOO error ### " );
+        x.toString( &w.put!( const char[] ) );
+        w.put( '\n' );
+        stderr.flush();
     }
-    catch ( Throwable t ) {}
+    catch ( Exception ohCrap ) {}
     config.shouldContinue = false;
 }
 
@@ -110,17 +108,15 @@ File file; ///
 /**
  *
  */
-@trusted void write ( Args... ) ( string prefix, string msg, Args args ) nothrow
+@trusted void write ( Args... ) ( string msg, Args args ) nothrow
 {
-    import std.datetime : Clock;
-    import std.format : formattedWrite;
+    import std.datetime : Clock             ;
+    import std.format   : formattedWrite    ;
 
     try {
         if ( file.isOpen ) {
             auto w = file.lockingTextWriter();
             w.put( Clock.currTime().toSimpleString() );
-            w.put( SEPARATOR );
-            w.put( prefix );
             w.put( SEPARATOR );
             static if ( Args.length == 0 ) {
                 w.put( msg );
@@ -132,7 +128,7 @@ File file; ///
         }
     }
     catch ( Exception x ) {
-        fail();
+        fail( x );
     }
 }
 
@@ -148,7 +144,7 @@ File file; ///
         }
     }
     catch ( Exception x ) {
-        fail();
+        fail( x );
     }
 }
 

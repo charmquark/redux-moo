@@ -58,151 +58,125 @@ enum ExitCode : int {
 /**
  *
  */
-ExitCode exitCode = ExitCode.Ok;
-
-
-/**
- *
- */
-bool shouldContinue = true;
-
-
-/**
- *
- */
-@safe @property string dbPath () nothrow
+struct Config
 {
-    return dbPath_;
-}
+    ExitCode    exitCode        = ExitCode.Ok   ; /// 
+    bool        shouldContinue  = true          ; /// 
 
 
-/**
- *
- */
-@safe @property bool lambda () nothrow
-{
-    return lambda_;
-}
-
-
-/**
- *
- */
-@safe @property string logPath () nothrow
-{
-    return logPath_;
-}
-
-
-/**
- *
- */
-@safe @property ushort port () nothrow
-{
-    return port_;
-}
-
-
-/**
- *
- */
-@safe @property bool shouldStart () nothrow
-{
-    return shouldStart_;
-}
-
-
-/**
- *
- */
-@safe void checkUncaughtException ( Exception x ) nothrow
-{
-    import moo.exception;
-
-    if ( auto xcx = cast( ExitCodeException ) x ) {
-        exitCode = xcx.code;
+    /**
+     *
+     */
+    @safe @property string dbPath () const pure nothrow
+    {
+        return dbPath_;
     }
-}
 
 
-/**
- *
- */
-void parseArgs ( string[] args )
-{
-    import std.getopt;
-    import std.path : setExtension;
-    import std.stdio : stdout;
-    import moo.exception;
-
-    bool helpWanted = false;
-    getopt(
-        args,
-        std.getopt.config.passThrough,
-        `help|?`    , &helpWanted   ,
-        `file|f`    , &dbPath_      ,
-        `log|l`     , &logPath_     ,
-        `lambda|L`  , &lambda_      ,
-        `port|p`    , &port_
-    );
-    if ( logPath_ == null ) {
-        logPath_ = dbPath_.setExtension( `log` );
+    /**
+     *
+     */
+    @safe @property bool helpWanted () const pure nothrow
+    {
+        return helpWanted_;
     }
-    if ( helpWanted ) {
-        stdout.writef(
-            "USAGE: %s [options]\n"
-            "\n"
-            "OPTIONS:\n"
-            "    -?  --help         Show this help text.\n"
-            "    -f  --file=PATH    Set path to database. (default: %s) (current: %s)\n"
-            "    -l  --log=PATH     Set path to log. If omitted, derived from db path. (current: %s)\n"
-            "    -L  --lambda       Load a LambdaMOO database.\n"
-            "    -p  --port=NUM     System listener port. (default: %s) (current: %s)\n",
-            args[ 0 ],
-            DEFAULT_DB_PATH, dbPath,
-            logPath,
-            DEFAULT_PORT, port
+
+
+    /**
+     *
+     */
+    @safe @property bool lambda () const pure nothrow
+    {
+        return lambda_;
+    }
+
+
+    /**
+     *
+     */
+    @safe @property string logPath () const pure nothrow
+    {
+        return logPath_;
+    }
+
+
+    /**
+     *
+     */
+    @safe @property ushort port () const pure nothrow
+    {
+        return port_;
+    }
+
+
+    /**
+     *
+     */
+    @safe @property bool shouldStart () const pure nothrow
+    {
+        return shouldStart_;
+    }
+
+
+    /**
+     *
+     */
+    void parseArgs ( string[] args )
+    {
+        import std.getopt;
+        import std.path : setExtension;
+        import std.stdio : stdout;
+        import moo.exception;
+
+        getopt(
+            args,
+            std.getopt.config.passThrough,
+            `help|?`    , &helpWanted_  ,
+            `file|f`    , &dbPath_      ,
+            `log|l`     , &logPath_     ,
+            `lambda`    , &lambda_      ,
+            `port|p`    , &port_
         );
+        if ( logPath_ == null ) {
+            logPath_ = dbPath_.setExtension( `log` );
+        }
+        if ( args.length > 1 ) {
+            helpWanted_ = true;
+            exitCode = ExitCode.InvalidArg;
+        }
+        shouldStart_ = !helpWanted_;
     }
-    else if ( args.length > 1 ) {
-        throw new ExitCodeException( ExitCode.InvalidArg, `Unrecognized argument(s).` );
-    }
-    else {
-        shouldStart_ = true;
-    }
+
+
+    //------------------------------------------------------------------------------------------
+    private:
+
+
+    string  dbPath_         = DEFAULT_DB_PATH   ; /// 
+    string  logPath_        = null              ; /// 
+    ushort  port_           = DEFAULT_PORT      ; /// 
+    bool    helpWanted_     = false             ; /// 
+    bool    lambda_         = false             ; /// 
+    bool    shouldStart_    = false             ; /// 
+
 }
 
 
-//--------------------------------------------------------------------------------------------------
-private:
+/**
+ *
+ */
+Config config;
 
 
 /**
  *
  */
-string dbPath_ = DEFAULT_DB_PATH;
+@safe void checkUncaughtException ( in Exception x ) nothrow
+{
+    import moo.exception;
 
-
-/**
- *
- */
-bool lambda_ = false;
-
-
-/**
- *
- */
-string logPath_ = null;
-
-
-/**
- *
- */
-ushort port_ = DEFAULT_PORT;
-
-
-/**
- *
- */
-bool shouldStart_ = false;
+    if ( auto xcx = cast( const ExitCodeException ) x ) {
+        config.exitCode = xcx.code;
+    }
+}
 
