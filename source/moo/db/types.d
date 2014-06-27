@@ -240,7 +240,12 @@ final class MSymbol
 
     @safe int opCmp(const(MSymbol) other) const pure nothrow
     {
-        return typeid(MHash).compare(&_hash, &other._hash);
+        return _hash < other._hash
+            ? -1
+            : _hash > other._hash
+                ? 1
+                : 0
+        ;
     }
 
 
