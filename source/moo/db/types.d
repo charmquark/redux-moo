@@ -15,22 +15,23 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 /**
- *
+ *  Defines various datatypes used by the database, and which ought to be used by the vm and any
+ *  other components that are dealing wiht the database.
  */
 module moo.db.types;
 
 
 /**
- * 
+ *  Some basic types.
  */
 alias MFloat    = double    ;
-alias MInt      = long      ;
-alias MList     = MValue[]  ;
-alias MString   = dstring   ;
+alias MInt      = long      ;   ///ditto
+alias MList     = MValue[]  ;   ///ditto
+alias MString   = dstring   ;   ///ditto
 
 
 /**
- * 
+ *  MOO error type.
  */
 enum MError : MInt
 {
@@ -38,23 +39,23 @@ enum MError : MInt
     Type,
     Div,
     Perm,
-    PropNF, 
-    VerbNF, 
-    VarNF, 
+    PropNF,
+    VerbNF,
+    VarNF,
     InvInd,
-    RecMove, 
-    MaxRec, 
-    Range, 
-    Args, 
-    NAcc, 
-    InvArg, 
-    Quota, 
+    RecMove,
+    MaxRec,
+    Range,
+    Args,
+    NAcc,
+    InvArg,
+    Quota,
     Float
 }
 
 
 /**
- *
+ *  MOO object type.
  */
 final class MObject
 {
@@ -102,21 +103,6 @@ final class MObject
     }
 
 
-    package {
-        MInt                    id          ;
-        MObject                 child       ;
-        MObject                 content     ;
-        MObject                 location    ;
-        MString                 name        ;
-        MObject                 next        ;
-        MObject                 owner       ;
-        MObject                 parent      ;
-        MProperty[MSymbol]      properties  ;
-        MObject                 sibling     ;
-        MVerb[]                 verbs       ;
-    }
-
-
     package @safe this(MInt id) pure nothrow
     {
         this.id = id;
@@ -128,6 +114,21 @@ final class MObject
         this.id     = id;
         this.parent = parent;
         this.name   = name;
+    }
+
+
+    package {
+        MInt                id          ;
+        MObject             child       ;
+        MObject             content     ;
+        MObject             location    ;
+        MString             name        ;
+        MObject             next        ;
+        MObject             owner       ;
+        MObject             parent      ;
+        MProperty[MSymbol]  properties  ;
+        MObject             sibling     ;
+        MVerb[]             verbs       ;
     }
 
 
@@ -199,69 +200,60 @@ final class MSymbol
     alias MHash = moo.hash.MHash;
 
 
-    static @trusted MSymbol opIndex ( MString str )
+    private static MSymbol[MHash] _registry;
+
+
+    static @trusted MSymbol opIndex(MString str)
     {
-        str = normalize( str );
-        auto h = moo.hash.hash( str );
-        auto sym = registry.get( h, new MSymbol( str, h ) );
+        auto norm = str.normalize();
+        auto h = moo.hash.hash(norm);
+        auto sym = _registry.get(h, new MSymbol(norm, h));
         return sym;
     }
 
 
-    @safe @property MHash hash () const
+    private @safe this(MString str, MHash h)
+    {
+        _text = str;
+        _hash = h;
+        _registry[h] = this;
+    }
+
+
+    private {
+        MString _text   ;
+        MHash   _hash   ;
+    }
+
+
+    @safe @property MHash hash() const pure nothrow
     {
         return _hash;
     }
 
 
-    @safe @property MString text () const pure nothrow
+    @safe @property MString text() const pure nothrow
     {
         return _text;
     }
 
 
-    @safe int opCmp ( const( MSymbol ) other ) const pure nothrow
+    @safe int opCmp(const(MSymbol) other) const pure nothrow
     {
-        return (
-            _hash < other._hash
-            ? -1
-            : (
-                _hash > other._hash
-                ? 1
-                : 0
-            )
-        );
+        return typeid(MHash).compare(&_hash, &other._hash);
     }
 
 
-    @safe bool opEquals ( const( Object ) other ) const pure nothrow
+    @safe bool opEquals(const(Object) other) const pure nothrow
     {
-        auto tmp = cast( const( MSymbol ) ) other;
-        return tmp !is null ? opEquals( tmp ) : false;
+        auto tmp = cast(const(MSymbol)) other;
+        return tmp !is null ? opEquals(tmp) : false;
     }
 
 
-    @safe bool opEquals ( const( MSymbol ) other ) const pure nothrow
+    @safe bool opEquals(const(MSymbol) other) const pure nothrow
     {
         return this is other;
-    }
-
-
-    private:
-
-
-    static MSymbol[ MHash ] registry;
-
-
-    MString _text   ;
-    MHash   _hash   ;
-
-
-    @safe this ( MString str, MHash h )
-    {
-        _text = str;
-        _hash = h;
-        registry[ h ] = this;
     }
 }
 
