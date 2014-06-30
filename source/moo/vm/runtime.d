@@ -23,7 +23,7 @@ module moo.vm.runtime;
 /**
  *
  */
-void run ()
+@safe void runVM() nothrow
 {
 }
 
@@ -31,7 +31,7 @@ void run ()
 /**
  *
  */
-void start ()
+@safe void startVM() nothrow
 {
 }
 
@@ -39,7 +39,7 @@ void start ()
 /**
  *
  */
-void stop ()
+@safe void stopVM() nothrow
 {
 }
 

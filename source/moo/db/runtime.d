@@ -26,165 +26,136 @@ import  moo.config      ,
 
 
 /**
- *  Perform any pending work.
+ *
  */
-void run ()
-{
-}
+private bool _active = false;
 
 
 /**
- *  Select an object from the database.
+ *
+ */
+private MObject[] _world;
+
+
+/**
+ *  Get an object from the database, optionally creating the object (and expanding the database) as
+ *  needed.  By default it will return null for an invalid object or id out of range.
  *
  *  Params:
- *      oid = desired object #id
+ *      id              = desired object's #id
+ *      shouldCreate    = (optional) pass true to create the object as needed
  *
- *  Returns: a pointer to a const view of the selected object, or null if invalid
+ *  Returns: the object, or null if invalid and shouldCreate is false
  */
-@safe const(MObject) select(MInt oid) nothrow
+@safe MObject getObject(in MInt id, in bool shouldCreate = false) nothrow
 {
-    auto obj = mutableSelect(oid);
-    if (obj !is null && obj.recycled)
+    MObject result = null;
+    if (id >= 0)
     {
-        obj = null;
+        if (id < _world.length)
+        {
+            result = _world[id];
+        }
+        if (result is null && shouldCreate)
+        {
+            expandDatabase(id + 1);
+            result = _world[id] = new MObject(id);
+        }
     }
-    return obj;
+    return result;
 }
 
 
 /**
- *  Start the database system.
+ *  Perform a cycle of pending work.
  */
-void start()
+@safe void runDatabase() nothrow
 {
-    exitCodeEnforce!`Internal`(!active, `start() called on active database system`);
-    log(`Starting database system.`);
-    debug {
-        log(` * size of an object : %d`, __traits(classInstanceSize, MObject));
-        log(` * size of a property: %d`, MProperty.sizeof);
-        log(` * size of a value   : %d`, MValue.sizeof);
-        log(` * size of a verb    : %d`, __traits(classInstanceSize, MVerb));
-    }
-    load();
-    exitCodeEnforce!`InvalidDb`(validate(), `database failed validation`);
-    active = true;
 }
 
 
 /**
- *  Stop the database system.
+ *  Database startup.
  */
-@safe void stop () nothrow
+@safe void startDatabase()
 {
-    if ( active ) {
-        log( `Stopping database system.` );
-        active = false;
+    exitCodeEnforce!`Internal`(!_active, "start() called on an already active database");
+    log("Starting database.");
+    loadDatabase();
+    exitCodeEnforce!`InvalidDb`(validateDatabase(), "database failed validation");
+    _active = true;
+}
+
+
+/**
+ *  Database shutdown.
+ */
+@safe void stopDatabase() nothrow
+{
+    if (_active)
+    {
+        log("Stopping database");
+        destroy(_world);
+        _active = false;
     }
 }
 
 
-//--------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////////////
 package:
 
 
 /**
- *  Reserve a minimum number of slots in the database.
+ *  Expand the database, as necessary, out to a minimum size.
  *
  *  Params:
- *      requestedSize   = the desired minimum size (kinda obvious)
-  */
-@safe void reserve ( size_t requestedSize ) nothrow
-{
-    if ( world.length < requestedSize ) {
-        world.length = requestedSize;
-    }
-}
-
-
-/**
- *  Select an object from the database. Will select recycled objects. Outside code should use
- *  select() instead.
- *
- *  Params:
- *      oid     = desired object #id
- *      create  = whether to create the object if it does not exist
- *
- *  Returns: a reference to the selected object, or null if the #id is outside the database's range.
+ *      requestedSize = the desired minimum size (kinda obvious)
  */
-@trusted MObject mutableSelect(MInt oid, bool shouldCreate = false) nothrow
+@safe void expandDatabase(in size_t requestedSize) nothrow
 {
-    MObject obj = null;
-    if (oid >= 0 && oid < world.length)
+    if (_world.length < requestedSize)
     {
-        obj = world[oid];
-        if (obj is null && shouldCreate)
-        {
-            obj = world[oid] = new MObject(oid);
-        }
+        _world.length = requestedSize;
     }
-    return obj;
 }
 
 
-/**
- *  Select a verb from the database by index. This is "unsafe" in that it returns a mutable view.
- *
- *  Params:
- *      oid = object #id to select the verb from
- *      vid = index of the desired verb
- *
- *  Returns: a pointer to the selected verb, or null if invalid
- */
-@safe MVerb mutableSelectVerb(MInt oid, MInt vid) nothrow
-{
-    MVerb v = null;
-    if (auto o = mutableSelect(oid))
-    {
-        v = o.selectVerb(vid);
-    }
-    return v;
-}
-
-
-//--------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////////////
 private:
 
 
-bool        active  = false ; /// whether the system is active; ie, whether start() has been called
-MObject[]   world           ; /// actual object storage
-
-
 /**
- *  Load the database from disc.
+ *  Load the database from its file.
  */
-void load ()
+@trusted void loadDatabase()
 {
-    import std.file : exists;
-    import std.stdio : File;
+    import  std.file    : exists    ;
+    import  std.stdio   : File      ;
 
-    import lloader = moo.db.load_lambda;
-    import rloader = moo.db.load_remoo;
+    import  lloader = moo.db.load_lambda;
+    import  rloader = moo.db.load_remoo;
 
-    exitCodeEnforce!`FileNotFound`(
-        config.dbPath.exists(),
-        `Did not find database file ` ~ config.dbPath
-    );
-    auto file = File( config.dbPath, `r` );
-    try {
-        if ( config.lambda ) {
-            log( `Will load LambdaMOO database from %s`, config.dbPath );
-            lloader.load( file );
+    exitCodeEnforce!`FileNotFound`(config.dbPath.exists(), "Did not find database file " ~ config.dbPath);
+    try
+    {
+        auto file = File(config.dbPath, `r`);
+        if (config.lambda)
+        {
+            lloader.load(file);
         }
-        else {
-            log( `Will load ReduxMOO database from %s`, config.dbPath );
-            rloader.load( file );
+        else
+        {
+            log("Will load ReduxMOO database from %s", config.dbPath);
+            rloader.load(file);
         }
     }
-    catch ( ExitCodeException xcx ) {
+    catch (ExitCodeException xcx)
+    {
         throw xcx;
     }
-    catch ( Exception x ) {
-        throw new ExitCodeException( ExitCode.Generic, `Failed loading database`, x );
+    catch (Exception x)
+    {
+        throw new ExitCodeException(ExitCode.Generic, "Failed loading database", x);
     }
 }
 
@@ -194,7 +165,7 @@ void load ()
  *
  *  Returns: true for pass, false for fail.
  */
-@safe bool validate () pure nothrow
+@safe bool validateDatabase () pure nothrow
 {
     bool pass = true;
     return pass;

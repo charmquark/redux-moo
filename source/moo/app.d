@@ -19,6 +19,13 @@
  */
 module moo.app;
 
+import  moo.config          ;
+import  moo.db              ;
+import  moo.log             ;
+import  moo.native.signal   ;
+import  moo.net             ;
+import  moo.vm              ;
+
 
 /**
  *  Main function.
@@ -29,54 +36,38 @@ module moo.app;
  *  Returns: program exit code; 0 meaning success, >0 meaning error.  See module moo.config for
  *      details.
  */
-int main ( string[] args )
-in {
+int main(string[] args)
+in
+{
     // there's something seriously wonky if this ever trips...
     assert( args.length > 0 );
 }
-body {
-    import moo.config;
-
-    config.parseArgs( args );
-    if ( config.shouldStart ) {
-        import moo.log;
-
-        import sig  = moo.native.signal ;
-        import db   = moo.db            ;
-        import net  = moo.net           ;
-        import vm   = moo.vm            ;
-
-        try {
-            startLog();
-            log( `Starting ReduxMOO %s`, APP_VERSION );
-
-            db.start();
-            vm.start();
-            net.start();
-
-            sig.registerSignalHandlers();
-
-            while ( config.shouldContinue ) {
-                net.run();
-                vm.run();
-                db.run();
+body
+{
+    config.parseArgs(args);
+    if (config.shouldStart)
+    {
+        try
+        {
+            performStartup();
+            while (config.shouldContinue)
+            {
+                performRuntime();
             }
         }
-        catch ( Exception x ) {
-            checkUncaughtException( x );
-            logError( x );
+        catch (Exception x)
+        {
+            checkUncaughtException(x);
+            logError(x);
         }
-        finally {
-            net.stop();
-            vm.stop();
-            db.stop();
-
-            log( `Goodbye.` );
-            stopLog();
+        finally
+        {
+            performShutdown();
         }
     }
-    else {
-        showHelp( args[ 0 ] );
+    else
+    {
+        showHelp(args[0]);
     }
     return config.exitCode;
 }
@@ -85,7 +76,7 @@ body {
 /**
  *
  */
-void showHelp ( in string cmd )
+void showHelp(in string cmd)
 {
     import std.stdio : stdout;
 
@@ -100,3 +91,40 @@ void showHelp ( in string cmd )
     );
 }
 
+
+/**
+ *
+ */
+void performRuntime()
+{
+    runNet();
+    runVM();
+    runDatabase();
+}
+
+
+/**
+ *
+ */
+void performShutdown()
+{
+    stopNet();
+    stopVM();
+    stopDatabase();
+    log(`Goodbye.`);
+    stopLog();
+}
+
+
+/**
+ *
+ */
+void performStartup()
+{
+    startLog();
+    log(`Starting ReduxMOO %s`, APP_VERSION);
+    startDatabase();
+    startVM();
+    startNet();
+    registerSignalHandlers();
+}

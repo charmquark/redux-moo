@@ -109,14 +109,6 @@ final class MObject
     }
 
 
-    package @safe this(MInt id, MObject parent, MString name) pure nothrow
-    {
-        this.id     = id;
-        this.parent = parent;
-        this.name   = name;
-    }
-
-
     package {
         MInt                id          ;
         MObject             child       ;
@@ -156,7 +148,7 @@ final class MObject
     }
 
 
-    @safe inout(MVerb) selectVerb(MInt vid) inout nothrow
+    @safe inout(MVerb) getVerb(MInt vid) inout nothrow
     {
         if (vid >= 0 && vid < verbs.length)
         {
@@ -394,6 +386,34 @@ struct MValue
     }
 
 
+    /**
+     *
+     */
+    @trusted MString toLiteral() const
+    {
+        import std.conv;
+
+        import std.algorithm    : map;
+        import std.string       : format;
+
+        final switch (type) with (MType)
+        {
+            case Int        : return to!MString(i);
+            case Obj        : return dtext('#', i);
+            case String     : return dtext('"', s, '"');
+            case Err        : return to!MString(e);
+            case List       : return to!MString(`{%(%s%|, %)}`.format(l.map!(elem => elem.toLiteral())));
+            case Clear      : return "<clear>"d;
+            case None       : return "<none>"d;
+            case Catch      : return "<catch>"d;
+            case Finally    : return "<finally>"d;
+            case Float      : return to!MString(f);
+            case Symbol     : return dtext('"', y.text, '"');
+            case ObjRef     : return dtext('#', o.id);
+        }
+    }
+
+
 } // end MValue
 
 
@@ -429,6 +449,15 @@ final class MVerb
         None,
         Any,
         This
+    }
+
+
+    package @safe this(MString name, MObject owner, MInt flags, MInt preposition) pure nothrow
+    {
+        this.name           = name;
+        this.owner          = owner;
+        this.flags          = flags;
+        this.preposition    = preposition;
     }
 
 

@@ -19,6 +19,8 @@
  */
 module moo.exception;
 
+import std.conv;
+
 import moo.config : ExitCode;
 
 
@@ -87,16 +89,16 @@ template enforceEx ( E )
     static if ( is( E : ExitCodeException ) ) {
         @safe T enforceEx ( T )
         (
-            T           value   ,
-            ExitCode    code    ,
-            lazy string msg     = ``,
-            string      file    = __FILE__,
-            size_t      line    = __LINE__
+            T                   value   ,
+            ExitCode            code    ,
+            lazy const(char)[]  msg     = ``,
+            string              file    = __FILE__,
+            size_t              line    = __LINE__
         )
         pure
         {
             if ( !value )
-                throw new E( code, msg(), file, line );
+                throw new E( code, msg().to!string(), file, line );
             return value;
         }
     }
@@ -127,12 +129,12 @@ template exitCodeEnforce ( string CodeName )
 ///ditto
 template exitCodeEnforce ( ExitCode Code )
 {
-    @safe T exitCodeEnforce ( T )
+    @safe T exitCodeEnforce ( T,  )
     (
-        T           value   ,
-        lazy string msg     = ``,
-        string      file    = __FILE__,
-        size_t      line    = __LINE__
+        T                   value   ,
+        lazy const(char)[]  msg     = ``,
+        string              file    = __FILE__,
+        size_t              line    = __LINE__
     )
     pure
     {

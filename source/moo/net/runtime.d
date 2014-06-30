@@ -23,7 +23,7 @@ module moo.net.runtime;
 /**
  *
  */
-void run ()
+@safe void runNet() nothrow
 {
 }
 
@@ -31,7 +31,7 @@ void run ()
 /**
  *
  */
-void start ()
+@safe void startNet() nothrow
 {
 }
 
@@ -39,7 +39,7 @@ void start ()
 /**
  *
  */
-void stop ()
+@safe void stopNet() nothrow
 {
 }
 
