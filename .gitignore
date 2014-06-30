@@ -6,3 +6,4 @@ tmp
 trace.*
 *.db
 *.rdb
+*.rdb.*

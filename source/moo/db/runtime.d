@@ -34,7 +34,58 @@ private bool _active = false;
 /**
  *
  */
+private size_t _dumpCounter = 0;
+
+
+/**
+ *
+ */
 private MObject[] _world;
+
+
+/**
+ *
+ */
+@property @safe MObject[] allObjects() nothrow
+{
+    MObject[] result;
+    result.reserve(_world.length);
+
+    void step(MObject obj) nothrow
+    {
+        if (obj !is null)
+        {
+            result ~= obj;
+            obj = obj.child;
+            while (obj !is null)
+            {
+                step(obj);
+                obj = obj.sibling;
+            }
+        }
+    }
+
+    step(getObject(1));
+    return result;
+}
+
+
+/**
+ *
+ */
+@property @safe MInt maxValidObjectID() nothrow
+{
+    MInt result = -1;
+    foreach_reverse (i, x; _world)
+    {
+        if (x !is null && !x.recycled)
+        {
+            result = i;
+            break;
+        }
+    }
+    return result;
+}
 
 
 /**
@@ -90,11 +141,12 @@ private MObject[] _world;
 /**
  *  Database shutdown.
  */
-@safe void stopDatabase() nothrow
+@safe void stopDatabase()
 {
     if (_active)
     {
         log("Stopping database");
+        dumpDatabase(true);
         destroy(_world);
         _active = false;
     }
@@ -103,6 +155,40 @@ private MObject[] _world;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 package:
+
+
+/**
+ *
+ */
+@trusted void dumpDatabase(bool finalize = false)
+{
+    import  std.conv;
+
+    import  dumper = moo.db.dump;
+
+    string path = config.dbPath;
+    if (finalize)
+    {
+        path ~= ".final";
+    }
+    else
+    {
+        path ~= text('.', ++_dumpCounter);
+    }
+    try
+    {
+        auto file = File(path, `w`);
+        dumper.dump(file);
+    }
+    catch (ExitCodeException xcx)
+    {
+        throw xcx;
+    }
+    catch (Exception x)
+    {
+        throw new ExitCodeException(ExitCode.Generic, "Failed dumping database", x);
+    }
+}
 
 
 /**
@@ -142,10 +228,10 @@ private:
         if (config.lambda)
         {
             lloader.load(file);
+            config.changeDBPathExtension();
         }
         else
         {
-            log("Will load ReduxMOO database from %s", config.dbPath);
             rloader.load(file);
         }
     }

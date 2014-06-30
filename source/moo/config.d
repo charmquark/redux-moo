@@ -121,6 +121,17 @@ struct Config
     /**
      *
      */
+    @safe void changeDBPathExtension(string ext = "rdb") pure nothrow
+    {
+        import std.path : setExtension;
+
+        dbPath_ = dbPath_.setExtension(ext);
+    }
+
+
+    /**
+     *
+     */
     void parseArgs ( string[] args )
     {
         import std.getopt;

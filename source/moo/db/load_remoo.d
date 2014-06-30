@@ -19,13 +19,50 @@
  */
 module moo.db.load_remoo;
 
-import std.stdio : File;
+import  std.range   ;
+import  std.traits  ;
+import  moo.log     ;
+
+import  std.stdio : File;
 
 
 /**
+ *  Loader driver function.
  *
+ *  Params:
+ *      file    = source file
  */
-void load ( ref File file )
+package void load(ref File file)
+in
 {
+    assert( file.isOpen );
+}
+body
+{
+    log("Will load ReduxMOO database from %s", file.name);
+    auto lines = file.byLine;
+    Loader!(typeof(lines))(lines).load();
+    log("Finished reading database");
+}
+
+
+/**
+ *  ReduxMOO loader implementation.
+ */
+private struct Loader(R)
+if (isInputRange!R && isSomeString!(ElementType!R))
+{
+    R source;
+
+
+    @trusted this(R source)
+    {
+        this.source = source;
+    }
+
+
+    @safe void load()
+    {
+    }
 }
 
