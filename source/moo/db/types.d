@@ -389,27 +389,36 @@ struct MValue
     /**
      *
      */
-    @trusted MString toLiteral() const
+    @trusted MString toLiteral(bool shouldRecurse = false, bool shouldPropogateRecursion = false) const
     {
         import std.conv;
 
         import std.algorithm    : map;
-        import std.string       : format;
+        import std.string       : format, toUpper;
 
         final switch (type) with (MType)
         {
-            case Int        : return to!MString(i);
+            case Int        : return i.to!MString;
             case Obj        : return dtext('#', i);
             case String     : return dtext('"', s, '"');
-            case Err        : return to!MString(e);
-            case List       : return to!MString(`{%(%s%|, %)}`.format(l.map!(elem => elem.toLiteral())));
+            case Err        : return "E_"d ~ e.to!MString.toUpper;
             case Clear      : return "<clear>"d;
             case None       : return "<none>"d;
             case Catch      : return "<catch>"d;
             case Finally    : return "<finally>"d;
-            case Float      : return to!MString(f);
+            case Float      : return f.to!MString;
             case Symbol     : return dtext('"', y.text, '"');
             case ObjRef     : return dtext('#', o.id);
+
+            case List:
+                if (shouldRecurse)
+                {
+                    return `{%(%s%|, %)}`.format(l.map!(elem => elem.toLiteral(shouldPropogateRecursion, shouldPropogateRecursion))).to!MString;
+                }
+                else
+                {
+                    return "{LIST}"d;
+                }
         }
     }
 
