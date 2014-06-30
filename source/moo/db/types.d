@@ -195,6 +195,12 @@ final class MSymbol
     private static MSymbol[MHash] _registry;
 
 
+    package static @property @safe const(MSymbol[MHash]) registry() nothrow
+    {
+        return _registry;
+    }
+
+
     static @trusted MSymbol opIndex(MString str)
     {
         auto norm = str.normalize();
@@ -258,7 +264,7 @@ final class MSymbol
 /**
  * 
  */
-enum MType : ubyte
+enum MType : uint
 {
     Int,
     Obj,

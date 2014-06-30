@@ -37,193 +37,181 @@ in
 body
 {
     log("Will write database to %s", file.name);
-    auto writer = file.lockingTextWriter();
-    Dumper!(typeof(writer))(writer).dump();
-    //writer.writeHeader();
-    //writer.writeObjects();
+    Dumper(file).dump();
     log("Finished writing database.");
 }
 
 
-private struct Dumper(R)
-if (isOutputRange!(R, string))
+private struct Dumper
 {
-    import  std.format : formattedWrite, text;
+    import  std.conv    ;
+
+    import  std.format  : formattedWrite, text;
 
 
-    this(R dest)
+    this(File dest)
     {
         this.dest = dest;
     }
 
 
-    R dest;
+    File dest;
 
 
     void dump()
     {
-        writeHeader();
-        writeObjects();
+        dumpHeader();
+        dumpSymbols();
+        dumpObjects();
+        dumpTasks();
     }
 
 
-    string objectIDText(in MObject obj)
+    void dumpHeader()
     {
-        return text(obj is null ? -1 : obj.id);
+        dest.rawWrite("rxdb");              // tag
+        dest.rawWrite([cast(uint) 1]);      // format version
+        writeSize(maxValidObjectID + 1);    // world reserve
     }
 
 
-    void writeHeader()
+    void dumpObjects()
     {
-        dest.formattedWrite("#!remoo\n#rdb format 1.0\nworld size %d\n", maxValidObjectID + 1);
-    }
-
-
-    void writeObjectID(in MObject obj)
-    {
-        put(dest, objectIDText(obj));
-    }
-
-
-    void writeObjects()
-    {
-        import std.algorithm : map;
-
+        dest.rawWrite("----objs");
         foreach (const obj; allObjects)
         {
-            // tag line
-            dest.formattedWrite("\nobject %d %X \"%s\"\n", obj.id, obj.flags, obj.name);
-
-            // hierarchies
-            put(dest, "\t");
-            writeObjectID(obj.parent);
-            put(dest, " -- ");
-            dest.formattedWrite(`%(%d%| %)`, obj.children.map!(x => x.id));
-            put(dest, "\n\t");
-            writeObjectID(obj.location);
-            put(dest, " -- ");
-            dest.formattedWrite(`%(%d%| %)`, obj.contents.map!(x => x.id));
-            put(dest, "\n");
-
-            // properties
-            dest.formattedWrite("\t%d properties\n", obj.properties.length);
-            foreach (label, const ref prop; obj.properties)
-            {
-                writeProperty(label, prop);
-            }
-
-            // verbs
-            dest.formattedWrite("\t%d verbs\n", obj.verbs.length);
-            foreach (const verb; obj.verbs)
-            {
-                writeVerb(verb);
-            }
-
-            put(dest, "end objects\n");
+            dest.rawWrite("cont");
+            dest.rawWrite([obj.id]);
+            writeString(obj.name);
+            dest.rawWrite([obj.flags]);
+            writeObjectRef(obj.owner, obj.parent, obj.child, obj.sibling, obj.location, obj.content, obj.next);
+            dumpProperties(obj);
+            dumpVerbs(obj);
         }
+        dest.rawWrite("stop");
     }
 
 
-    void writeProperty(MSymbol label, in ref MProperty prop)
+    void dumpProperties(in MObject obj)
     {
-        dest.formattedWrite("\t\t\"%s\" %s %X %s\n", label.text, objectIDText(prop.owner), prop.flags, prop.value.toLiteral(true, true));
+        writeSize(obj.properties.length);
+        foreach (const label, const ref prop; obj.properties)
+        {
+            dest.rawWrite([label.hash]);
+            dest.rawWrite([prop.flags]);
+            writeObjectRef(prop.owner);
+            writeValue(prop.value);
+        }
     }
 
 
-    void writeVerb(in MVerb verb)
+    void dumpSymbols()
     {
-        import std.string : splitLines;
-
-        auto code = verb.source.splitLines;
-        dest.formattedWrite("\t\t\"%s\" %s %X %d %s\n", verb.name, objectIDText(verb.owner), verb.flags, verb.preposition, code.length);
-        foreach (line; code)
+        auto reg = MSymbol.registry;
+        dest.rawWrite("----syms");
+        writeSize(reg.length);
+        foreach (const h, const s; reg)
         {
-            put(dest, "\t\t\t");
-            put(dest, line);
-            put(dest, "\n");
+            dest.rawWrite([h]);
+            writeString(s.text);
         }
     }
-}
-/+
-
-string flagsToString(in MObject obj)
-{
-    if (obj.flags == 0) return "-";
-    if (obj.recycled    ) result ~= 'x';
-    if (obj.fertile     ) result ~= 'f';
-    if (obj.readable    ) result ~= 'r';
-    if (obj.writable    ) result ~= 'w';
-    if (obj.player      ) result ~= 'p';
-    if (obj.programmer  ) result ~= 'c';
-    if (obj.wizard      ) result ~= 'w';
-    return result;
-}
 
 
-void writeHeader(T)(ref File file)
-in
-{
-    assert(file.isOpen);
-}
-body
-{
-    file.writefln("#!remoo");
-    file.writefln("#rdb format 1.0");
-    file.writeln("world size ", maxValidObjectID + 1);
-    file.writeln();
-}
-
-
-void writeObjects(ref File file)
-in
-{
-    assert(file.isOpen);
-}
-body
-{
-    foreach (const obj; allObjects)
+    void dumpTasks()
     {
-        file.writefln(`object #%d %s`, obj.id, obj.name);
-        file.writeln("\t", flagsToString(obj));
-        file.write("\t#");
-        if (auto parent = obj.parent)
-        {
-            file.write(parent.id);
-        }
-        else
-        {
-            file.write(-1);
-        }
-        file.write(" #");
-        if (auto loc = obj.location)
-        {
-            file.write(
-        }
-        else
-        {
-            file.write(-1);
-        }
-        file.writeln();
+        dest.rawWrite("----tasks");
+        dest.rawWrite("stop");
     }
-}
 
 
-void writeObjectRef(ref File file, in MObject obj)
-in
-{
-    assert(file.isOpen);
-}
-body
-{
-    file.write('#');
-    if (obj !is null)
+    void dumpVerbs(in MObject obj)
     {
-        file.write(obj.id);
+        writeSize(obj.verbs.length);
+        foreach (const ref verb; obj.verbs)
+        {
+            writeString(verb.name);
+            dest.rawWrite([verb.flags, verb.preposition]);
+            writeObjectRef(verb.owner);
+            writeString(verb.source);
+        }
     }
-    else
+
+
+    void writeObjectRef(in MObject[] refs...)
     {
-        file.write(-1);
+        import  std.algorithm   ;
+
+        import  std.array       : array;
+
+        dest.rawWrite(refs.map!(x => x is null ? -1 : x.id).array);
+    }
+
+
+    void writeSize(in MInt sz)
+    {
+        dest.rawWrite([sz]);
+    }
+
+
+    void writeSize(in size_t sz)
+    {
+        dest.rawWrite([sz.to!MInt]);
+    }
+
+
+    void writeString(in dstring str)
+    {
+        writeString(str.to!string);
+    }
+
+
+    void writeString(in string str)
+    {
+        dest.rawWrite([str.length.to!uint]);
+        dest.rawWrite(str);
+    }
+
+
+    void writeValue(in ref MValue val)
+    {
+        dest.rawWrite([val.type]);
+        switch (val.type) with (MType)
+        {
+            case Int:
+            case Obj:
+                dest.rawWrite([val.i]);
+                break;
+
+            case String:
+                writeString(val.s);
+                break;
+
+            case Err:
+                dest.rawWrite([val.e]);
+                break;
+
+            case List:
+                writeSize(val.l.length);
+                foreach (const ref elem; val.l)
+                {
+                    writeValue(elem);
+                }
+                break;
+
+            case Float:
+                dest.rawWrite([val.f]);
+                break;
+
+            case Symbol:
+                dest.rawWrite([val.y.hash]);
+                break;
+
+            case ObjRef:
+                writeObjectRef(val.o);
+                break;
+
+            default:
+        }
     }
 }
-
-+/

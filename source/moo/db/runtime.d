@@ -177,7 +177,7 @@ package:
     }
     try
     {
-        auto file = File(path, `w`);
+        auto file = File(path, `wb`);
         dumper.dump(file);
     }
     catch (ExitCodeException xcx)
