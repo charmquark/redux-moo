@@ -283,8 +283,7 @@ if (isInputRange!R && isSomeString!(ElementType!R))
         // line at the beginning of a lambda db file
         source.popFront();
         exitCodeEnforce!`InvalidDb`(!source.empty, "Unexpected end of database file");
-        auto result = source.front;
-        return result;
+        return source.front;
     }
 
 
